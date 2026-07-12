@@ -28,10 +28,16 @@ modId = "emi"
 mandatory = true
 versionRange = "[1.1.22,)"
 ordering = "NONE"
-side = "CLIENT"
+side = "BOTH"
 [[dependencies.${mod_id}]]
 modId = "emixx"
 mandatory = true
 versionRange = "[1.2.11,)"
 ordering = "NONE"
 side = "CLIENT"
+[[dependencies.${mod_id}]]
+modId = "cloth_config"
+mandatory = true
+versionRange = "[11.1.136,)"
+ordering = "NONE"
+side = "BOTH"

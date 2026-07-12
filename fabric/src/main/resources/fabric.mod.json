@@ -31,7 +31,8 @@
         "minecraft": "${minecraft_version}",
         "java": ">=17",
         "emi": ">=1.1.22",
-        "emixx": ">=1.2.11"
+        "emixx": ">=1.2.11",
+        "cloth-config": "*"
     },
     "suggests": {
         "another-mod": "*"
