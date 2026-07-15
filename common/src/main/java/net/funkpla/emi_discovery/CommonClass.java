@@ -4,6 +4,7 @@ import me.shedaniel.autoconfig.AutoConfig;
 import me.shedaniel.autoconfig.ConfigHolder;
 import me.shedaniel.autoconfig.serializer.Toml4jConfigSerializer;
 import net.funkpla.emi_discovery.network.PacketHandler;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 
 public class CommonClass {
@@ -18,6 +19,11 @@ public class CommonClass {
 
   public static ConfigHolder<EmiDiscoveryConfig> getConfigHolder() {
     return configHolder;
+  }
+
+  public static boolean isDisabled() {
+    return Minecraft.getInstance().player.getAbilities().instabuild
+        && !getConfigHolder().get().enableForCreativeMode;
   }
 
   public static ResourceLocation locate(String path) {

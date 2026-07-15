@@ -4,6 +4,8 @@ import concerrox.emixx.content.StackManager;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
 import java.util.List;
+
+import net.funkpla.emi_discovery.CommonClass;
 import net.funkpla.emi_discovery.Constants;
 import net.funkpla.emi_discovery.KnownItems;
 import org.jetbrains.annotations.Nullable;
@@ -50,23 +52,18 @@ public class EMIxxStackManagerMixin {
       at = @At("HEAD"),
       cancellable = true)
   private void filterStacks(CallbackInfoReturnable<List<EmiStack>> returnable) {
-    returnable.setReturnValue(getFilteredStacks());
+    if (!CommonClass.isDisabled()) returnable.setReturnValue(getFilteredStacks());
   }
 
-    /**
-     *  Invalidate the cache when a stack is toggled.
-     */
+  /** Invalidate the cache when a stack is toggled. */
+  @Inject(remap = false, method = "onStackInteractionDeprecated", at = @At("HEAD"))
+  private void clearFilteredCacheOnStack(EmiIngredient ingredient, CallbackInfo ci) {
+    filteredStackCache = null;
+  }
 
-    @Inject(remap = false, method = "onStackInteractionDeprecated", at = @At("HEAD"))
-    private void clearFilteredCacheOnStack(EmiIngredient ingredient, CallbackInfo ci) {
-        filteredStackCache = null;
-    }
-
-    /**
-     *  Invalidate the cache when displayed stack list is rebuilt
-     */
-    @Inject(remap = false, method = "buildDisplayedStacks", at = @At("HEAD"))
-    private void clearFilteredCacheDisplayed(CallbackInfo ci) {
-        filteredStackCache = null;
-    }
+  /** Invalidate the cache when displayed stack list is rebuilt */
+  @Inject(remap = false, method = "buildDisplayedStacks", at = @At("HEAD"))
+  private void clearFilteredCacheDisplayed(CallbackInfo ci) {
+    filteredStackCache = null;
+  }
 }

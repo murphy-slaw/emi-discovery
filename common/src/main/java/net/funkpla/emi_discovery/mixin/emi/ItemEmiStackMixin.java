@@ -3,6 +3,7 @@ package net.funkpla.emi_discovery.mixin.emi;
 import com.llamalad7.mixinextras.sugar.Local;
 import dev.emi.emi.api.stack.ItemEmiStack;
 import java.util.List;
+import net.funkpla.emi_discovery.CommonClass;
 import net.funkpla.emi_discovery.KnownItems;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.world.item.ItemStack;
@@ -28,7 +29,7 @@ public class ItemEmiStackMixin {
       CallbackInfoReturnable<List<ClientTooltipComponent>> cir,
       @Local(name = "stack") ItemStack stack,
       @Local(name = "list") List<ClientTooltipComponent> list) {
-    if (!KnownItems.shouldStackDisplay(ItemEmiStack.of(stack))) {
+    if (!CommonClass.isDisabled() && !KnownItems.shouldStackDisplay(ItemEmiStack.of(stack))) {
       cir.setReturnValue(list);
     }
   }

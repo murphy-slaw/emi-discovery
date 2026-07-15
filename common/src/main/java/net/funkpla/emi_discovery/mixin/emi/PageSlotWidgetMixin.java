@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.widget.Bounds;
 import dev.emi.emi.api.widget.SlotWidget;
+import net.funkpla.emi_discovery.CommonClass;
 import net.funkpla.emi_discovery.KnownItems;
 import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
@@ -44,7 +45,9 @@ public abstract class PageSlotWidgetMixin extends SlotWidgetMixin {
       method = "render",
       at = @At(value = "INVOKE", target = "Ldev/emi/emi/api/stack/EmiIngredient;isEmpty()Z"))
   private boolean filterPageSlots(EmiIngredient ingredient, Operation<Boolean> original) {
-    drawIcon = KnownItems.shouldIngredientDisplay(ingredient);
+
+    if (!CommonClass.isDisabled()) drawIcon = true;
+    else drawIcon = KnownItems.shouldIngredientDisplay(ingredient);
     return original.call(ingredient);
   }
 

@@ -5,6 +5,7 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.ListEmiIngredient;
 import java.util.List;
+import net.funkpla.emi_discovery.CommonClass;
 import net.funkpla.emi_discovery.KnownItems;
 import org.jetbrains.annotations.NotNull;
 import org.objectweb.asm.Opcodes;
@@ -33,6 +34,7 @@ public class ListEmiIngredientMixin {
               opcode = Opcodes.GETFIELD))
   private List<? extends EmiIngredient> filterRenderedStacks(
       ListEmiIngredient listEmiIngredient, Operation<List<? extends EmiIngredient>> original) {
+    if (CommonClass.isDisabled()) return original.call(listEmiIngredient);
     return filterEmiIngredients(listEmiIngredient);
   }
 
@@ -46,6 +48,7 @@ public class ListEmiIngredientMixin {
               opcode = Opcodes.GETFIELD))
   private List<? extends EmiIngredient> filterTooltipStacks(
       ListEmiIngredient listEmiIngredient, Operation<List<? extends EmiIngredient>> original) {
+    if (CommonClass.isDisabled()) return original.call(listEmiIngredient);
     return filterEmiIngredients(listEmiIngredient);
   }
 }

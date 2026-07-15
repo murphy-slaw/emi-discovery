@@ -11,4 +11,6 @@ public class EmiDiscoveryConfig implements ConfigData {
     public boolean displayCraftableInIndex = false;
     @ConfigEntry.Category("main")
     public boolean displayWithUnknownWorkstation = true;
+    @ConfigEntry.Category("main")
+    public boolean enableForCreativeMode = false;
 }

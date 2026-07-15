@@ -1,6 +1,6 @@
 {
     "text.autoconfig.emi_discovery.title": "EMIDiscovery",
     "text.autoconfig.emi_discovery.option.displayCraftableInIndex": "Display craftable unknown items in the index?",
-    "text.autoconfig.emi_discovery.option.displayWithUnknownWorkstation": "Display recipes for undiscovered workstations?"
-
+    "text.autoconfig.emi_discovery.option.displayWithUnknownWorkstation": "Display recipes for undiscovered workstations?",
+    "text.autoconfig.emi_discovery.option.enableForCreativeMode": "Enable filtering in Creative mode?"
 }

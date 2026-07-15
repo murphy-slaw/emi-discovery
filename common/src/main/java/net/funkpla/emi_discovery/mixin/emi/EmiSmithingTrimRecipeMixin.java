@@ -6,6 +6,7 @@ import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.recipe.special.EmiSmithingTrimRecipe;
 import java.util.List;
+import net.funkpla.emi_discovery.CommonClass;
 import net.funkpla.emi_discovery.KnownItems;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -21,6 +22,7 @@ public class EmiSmithingTrimRecipeMixin {
               target = "Ldev/emi/emi/api/stack/EmiIngredient;getEmiStacks()Ljava/util/List;"))
   private List<EmiStack> filterUnknownTrimMaterials(
       EmiIngredient ingredient, Operation<List<EmiStack>> original) {
+    if (CommonClass.isDisabled()) return original.call(ingredient);
     return ingredient.getEmiStacks().stream().filter(KnownItems::shouldStackDisplay).toList();
   }
 }
