@@ -10,11 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-
 import net.funkpla.emi_discovery.CommonClass;
-import net.funkpla.emi_discovery.EmiDiscoveryConfig;
 import net.funkpla.emi_discovery.KnownItems;
-import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;

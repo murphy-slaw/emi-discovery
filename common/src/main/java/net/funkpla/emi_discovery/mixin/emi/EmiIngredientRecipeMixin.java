@@ -8,11 +8,9 @@ import dev.emi.emi.api.stack.ListEmiIngredient;
 import dev.emi.emi.recipe.EmiTagRecipe;
 import java.util.ArrayList;
 import java.util.List;
-
 import net.funkpla.emi_discovery.CommonClass;
 import net.funkpla.emi_discovery.KnownItems;
 import net.funkpla.emi_discovery.mixin.emi.accessor.EmiTagRecipeAccessor;
-import net.minecraft.client.Minecraft;
 import net.minecraft.world.item.crafting.Ingredient;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;

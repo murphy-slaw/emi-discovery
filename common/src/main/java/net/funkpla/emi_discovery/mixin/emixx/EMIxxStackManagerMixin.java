@@ -4,9 +4,7 @@ import concerrox.emixx.content.StackManager;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
 import java.util.List;
-
 import net.funkpla.emi_discovery.CommonClass;
-import net.funkpla.emi_discovery.Constants;
 import net.funkpla.emi_discovery.KnownItems;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
