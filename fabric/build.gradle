@@ -28,7 +28,7 @@ dependencies {
     //modCompileOnly "dev.emi:emi-xplat-mojmap:${emi_version}"
     modImplementation "dev.emi:emi-fabric:${emi_version}"
     modImplementation"net.fabricmc:fabric-language-kotlin:1.13.9+kotlin.2.3.10"
-    modImplementation "maven.modrinth:emi-plus-backport:${emixx_version}"
+    modImplementation "maven.modrinth:reliable-emi:${emixx_version}"
     modImplementation "fuzs.forgeconfigapiport:forgeconfigapiport-fabric:8.0.3"
 }
 

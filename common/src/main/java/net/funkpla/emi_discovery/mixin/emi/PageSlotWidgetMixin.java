@@ -5,7 +5,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.widget.Bounds;
 import dev.emi.emi.api.widget.SlotWidget;
-import net.funkpla.emi_discovery.CommonClass;
 import net.funkpla.emi_discovery.KnownItems;
 import net.minecraft.client.gui.GuiGraphics;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(targets = "dev.emi.emi.api.recipe.EmiIngredientRecipe$PageSlotWidget")
 public abstract class PageSlotWidgetMixin extends SlotWidgetMixin {
 
-  @Unique private boolean drawIcon = false;
+  @Unique private boolean emi_discovery$drawIcon = false;
 
   /**
    * Override the wrapper for SlotWidget.drawSlotHighlight() so we can skip it if the item isn't
@@ -45,9 +44,7 @@ public abstract class PageSlotWidgetMixin extends SlotWidgetMixin {
       method = "render",
       at = @At(value = "INVOKE", target = "Ldev/emi/emi/api/stack/EmiIngredient;isEmpty()Z"))
   private boolean filterPageSlots(EmiIngredient ingredient, Operation<Boolean> original) {
-
-    if (!CommonClass.isDisabled()) drawIcon = true;
-    else drawIcon = KnownItems.shouldIngredientDisplay(ingredient);
+    emi_discovery$drawIcon = KnownItems.shouldIngredientDisplay(ingredient);
     return original.call(ingredient);
   }
 
@@ -66,7 +63,7 @@ public abstract class PageSlotWidgetMixin extends SlotWidgetMixin {
       cancellable = true)
   private void drawBackgroundAnyway(
       GuiGraphics draw, int mouseX, int mouseY, float delta, CallbackInfo ci) {
-    if (!drawIcon) {
+    if (!emi_discovery$drawIcon) {
       ((SlotWidget) (Object) this).drawBackground(draw, mouseX, mouseY, delta);
       ci.cancel();
     }

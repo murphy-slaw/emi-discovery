@@ -5,7 +5,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.screen.tooltip.IngredientTooltipComponent;
 import java.util.List;
-import net.funkpla.emi_discovery.CommonClass;
 import net.funkpla.emi_discovery.KnownItems;
 import net.funkpla.emi_discovery.mixin.emi.accessor.IngredientTooltipComponentAccessor;
 import org.objectweb.asm.Opcodes;
@@ -18,7 +17,7 @@ import org.spongepowered.asm.mixin.injection.At;
 @Mixin(IngredientTooltipComponent.class)
 public class IngredientTooltipComponentMixin {
   @Unique
-  private List<? extends EmiIngredient> filterIngredients(IngredientTooltipComponent component) {
+  private List<? extends EmiIngredient> emi_discovery$filterIngredients(IngredientTooltipComponent component) {
     return ((IngredientTooltipComponentAccessor) component)
         .getIngredients().stream().filter(KnownItems::shouldStackDisplay).toList();
   }
@@ -35,8 +34,7 @@ public class IngredientTooltipComponentMixin {
               opcode = Opcodes.GETFIELD))
   private List<? extends EmiIngredient> fixStackWidth(
       IngredientTooltipComponent component, Operation<List<? extends EmiIngredient>> original) {
-    if (CommonClass.isDisabled()) return original.call(component);
-    return filterIngredients(component);
+    return emi_discovery$filterIngredients(component);
   }
 
   @WrapOperation(
@@ -51,8 +49,7 @@ public class IngredientTooltipComponentMixin {
               opcode = Opcodes.GETFIELD))
   private List<? extends EmiIngredient> fixHeight(
       IngredientTooltipComponent component, Operation<List<? extends EmiIngredient>> original) {
-    if (CommonClass.isDisabled()) return original.call(component);
-    return filterIngredients(component);
+    return emi_discovery$filterIngredients(component);
   }
 
   @WrapOperation(
@@ -67,7 +64,6 @@ public class IngredientTooltipComponentMixin {
               opcode = Opcodes.GETFIELD))
   private List<? extends EmiIngredient> filterComponents(
       IngredientTooltipComponent instance, Operation<List<? extends EmiIngredient>> original) {
-    if (CommonClass.isDisabled()) return original.call(instance);
-    return filterIngredients(instance);
+    return emi_discovery$filterIngredients(instance);
   }
 }
