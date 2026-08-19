@@ -30,6 +30,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import dev.emi.emi.screen.EmiScreenManager;
 import net.funkpla.emi_discovery.mixin.MinecraftServerStorageSourceAccessor;
 import net.funkpla.emi_discovery.platform.Services;
 import net.minecraft.client.Minecraft;
@@ -70,16 +72,41 @@ public class KnownItems {
                 }
               });
 
+  public static void invalidateCache() {
+    stackDisplayCache.invalidateAll();
+    UPDATE_COUNT.getAndIncrement();
+    try {
+      if (EmiScreenManager.search != null) {
+        EmiScreenManager.search.update();
+      }
+    } catch (Throwable ignored) {
+    }
+  }
+
   public static void addKnown(ItemStack stack) {
     if (knownItems.add(stack.getItem())) {
-      stackDisplayCache.invalidateAll();
-      UPDATE_COUNT.getAndIncrement();
+      invalidateCache();
       saveToDisk();
     }
   }
 
+  public static boolean addKnownItems(Collection<Item> items) {
+    boolean anyAdded = false;
+    for (Item item : items) {
+      if (item != null && knownItems.add(item)) {
+        anyAdded = true;
+      }
+    }
+    if (anyAdded) {
+      invalidateCache();
+      saveToDisk();
+    }
+    return anyAdded;
+  }
+
   public static void clear() {
     knownItems.clear();
+    invalidateCache();
   }
 
   /**
@@ -89,6 +116,7 @@ public class KnownItems {
    * @param stack The stack to test.
    */
   public static boolean isKnown(ItemStack stack) {
+    if (!isModEnabled()) return true;
     return stack == ItemStack.EMPTY || knownItems.contains(stack.getItem());
   }
 
@@ -136,23 +164,81 @@ public class KnownItems {
     return true;
   }
 
+  public static EmiDiscoveryConfig getConfig() {
+    if (CommonClass.getConfigHolder() != null && CommonClass.getConfigHolder().get() != null) {
+      return CommonClass.getConfigHolder().get();
+    }
+    return new EmiDiscoveryConfig();
+  }
+
+  public static boolean isModEnabled() {
+    return getConfig().enabled;
+  }
+
+  public static boolean shouldFilterIndex() {
+    return isModEnabled() && getConfig().filterIndex;
+  }
+
+  public static boolean shouldDisplayCraftableInIndex() {
+    return getConfig().displayCraftableInIndex;
+  }
+
+  public static boolean requireWorkstationForCraftable() {
+    return getConfig().requireWorkstationForCraftable;
+  }
+
+  public static boolean displayWithUnknownWorkstation() {
+    return getConfig().displayWithUnknownWorkstation;
+  }
+
+  public static boolean requireCatalystsKnown() {
+    return getConfig().requireCatalystsKnown;
+  }
+
+  public static boolean allowRecipeLookupForUndiscovered() {
+    return !isModEnabled() || getConfig().allowRecipeLookupForUndiscovered;
+  }
+
+  public static boolean allowUsageLookupForUndiscovered() {
+    return !isModEnabled() || getConfig().allowUsageLookupForUndiscovered;
+  }
+
+  public static boolean shouldBlackoutRecipes() {
+    return isModEnabled() && getConfig().blackoutUnknownInRecipes;
+  }
+
+  public static boolean shouldObscureTooltips() {
+    return isModEnabled() && getConfig().obscureTooltips;
+  }
+
+  public static boolean shouldShowQuestionMarkOverlay() {
+    return isModEnabled() && getConfig().showQuestionMarkOverlay;
+  }
+
+  public static boolean isAdvancementDiscoveryEnabled() {
+    return isModEnabled() && getConfig().enableAdvancementDiscovery;
+  }
+
   /**
    * For ItemEmiStacks, we call the stack craftable if any recipe for the item has a known (or empty
-   * catalyst), has at least one known workstation, and can be made entirely with known items.
+   * catalyst), has at least one known workstation (if required), and can be made entirely with known items.
    */
   public static boolean isCraftable(ItemEmiStack itemEmiStack) {
-      try {
-    return EmiRecipes.manager.getRecipesByOutput(itemEmiStack).stream()
-        .filter(
-            recipe ->
-                (recipe.getCatalysts().isEmpty() || catalystsKnown(recipe))
-                    && EmiApi.getRecipeManager().getWorkstations(recipe.getCategory()).stream()
-                        .anyMatch(KnownItems::isKnown))
-        .anyMatch(r -> r.getInputs().stream().allMatch(KnownItems::isKnown));
+    try {
+      boolean reqWorkstation = requireWorkstationForCraftable();
+      return EmiRecipes.manager.getRecipesByOutput(itemEmiStack).stream()
+          .filter(
+              recipe ->
+                  (recipe.getCatalysts().isEmpty() || catalystsKnown(recipe))
+                      && (!reqWorkstation
+                          || EmiApi.getRecipeManager().getWorkstations(recipe.getCategory()).isEmpty()
+                          || EmiApi.getRecipeManager().getWorkstations(recipe.getCategory()).stream()
+                              .anyMatch(KnownItems::isKnown)))
+          .anyMatch(r -> r.getInputs().stream().allMatch(KnownItems::isKnown));
     } catch (NullPointerException e) {
-          Constants.LOG.error("Unexpected NPE in getInputs():",e);
-          return false;
-      }
+      Constants.LOG.error("Unexpected NPE in getInputs():", e);
+      return false;
+    }
   }
 
   /** For EmiGroupStacks, we call the stack craftable if any of the ItemEmiStacks are craftable. */
@@ -183,7 +269,10 @@ public class KnownItems {
   }
 
   public static boolean shouldStackDisplayUncached(EmiStack emiStack) {
-    return CommonClass.getConfigHolder().get().displayCraftableInIndex
+    if (!shouldFilterIndex()) {
+      return true;
+    }
+    return shouldDisplayCraftableInIndex()
         ? isKnownOrCraftable(emiStack)
         : isKnown(emiStack);
   }
@@ -193,20 +282,24 @@ public class KnownItems {
   }
 
   /**
-   * Returns true if at least one of the EmiRecipe's catalysts are known, or if there are no
+   * Returns true if catalysts are disabled or if at least one of the EmiRecipe's catalysts are known, or if there are no
    * catalysts.
    */
   private static boolean catalystsKnown(EmiRecipe recipe) {
+    if (!requireCatalystsKnown()) return true;
     return (recipe.getCatalysts().isEmpty())
         || recipe.getCatalysts().stream().anyMatch(KnownItems::isKnown);
   }
 
   /**
-   * Returns true if all the inputs for the given EmiRecipe are known and at least one catalyst is
-   * known (or there are no catalysts).
+   * Returns true if all the inputs for the given EmiRecipe are known, workstation is known (if required),
+   * and at least one catalyst is known (or catalysts are not required).
    */
   public static boolean areAllKnown(EmiRecipe recipe) {
-    return recipe.getInputs().stream().allMatch(KnownItems::isKnown) && catalystsKnown(recipe);
+    if (!isModEnabled()) return true;
+    return workstationsKnown(recipe.getCategory())
+        && recipe.getInputs().stream().allMatch(KnownItems::isKnown)
+        && catalystsKnown(recipe);
   }
 
   /**
@@ -224,7 +317,7 @@ public class KnownItems {
    * workstations.
    */
   public static boolean workstationsKnown(EmiRecipeCategory category) {
-    return CommonClass.getConfigHolder().get().displayWithUnknownWorkstation
+    return displayWithUnknownWorkstation()
         || EmiApi.getRecipeManager().getWorkstations(category).isEmpty()
         || workstationsFiltered(category).stream().anyMatch(KnownItems::isKnown);
   }
@@ -236,6 +329,9 @@ public class KnownItems {
    */
   public static Stream<Map.Entry<EmiRecipeCategory, List<EmiRecipe>>> filterEntrySet(
       Set<Map.Entry<EmiRecipeCategory, List<EmiRecipe>>> entrySet) {
+    if (shouldBlackoutRecipes()) {
+      return entrySet.stream();
+    }
     return entrySet.stream()
         .filter(entry -> workstationsKnown(entry.getKey()))
         .collect(

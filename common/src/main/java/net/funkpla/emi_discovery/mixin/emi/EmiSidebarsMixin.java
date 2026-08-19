@@ -5,13 +5,12 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.registry.EmiStackList;
 import dev.emi.emi.runtime.EmiSidebars;
-import java.util.List;
-
-import net.funkpla.emi_discovery.CommonClass;
 import net.funkpla.emi_discovery.KnownItems;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+
+import java.util.List;
 
 @Mixin(EmiSidebars.class)
 public class EmiSidebarsMixin {
@@ -30,7 +29,6 @@ public class EmiSidebarsMixin {
               opcode = Opcodes.GETSTATIC,
               target = "Ldev/emi/emi/registry/EmiStackList;filteredStacks:Ljava/util/List;"))
   private static List<EmiStack> filterFiltered(Operation<List<EmiStack>> operation) {
-    if (CommonClass.isDisabled()) return operation.call();
     return EmiStackList.filteredStacks.stream().filter(KnownItems::shouldStackDisplay).toList();
   }
 }

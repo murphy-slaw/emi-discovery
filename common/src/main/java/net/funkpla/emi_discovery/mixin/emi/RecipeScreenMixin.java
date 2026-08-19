@@ -7,7 +7,6 @@ import dev.emi.emi.api.recipe.EmiRecipeManager;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.screen.RecipeScreen;
 import java.util.List;
-import net.funkpla.emi_discovery.CommonClass;
 import net.funkpla.emi_discovery.KnownItems;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -36,8 +35,9 @@ public abstract class RecipeScreenMixin {
       EmiRecipeManager recipeManager,
       EmiRecipeCategory emiRecipeCategory,
       Operation<List<EmiIngredient>> original) {
-
-    if (CommonClass.isDisabled()) return original.call(recipeManager, emiRecipeCategory);
+    if (!KnownItems.isModEnabled() || KnownItems.shouldBlackoutRecipes() || KnownItems.displayWithUnknownWorkstation()) {
+      return original.call(recipeManager, emiRecipeCategory);
+    }
     return KnownItems.workstationsFiltered(emiRecipeCategory);
   }
 
@@ -52,8 +52,9 @@ public abstract class RecipeScreenMixin {
       EmiRecipeManager recipeManager,
       EmiRecipeCategory emiRecipeCategory,
       Operation<List<EmiIngredient>> original) {
-
-    if (CommonClass.isDisabled()) return original.call(recipeManager, emiRecipeCategory);
+    if (!KnownItems.isModEnabled() || KnownItems.shouldBlackoutRecipes() || KnownItems.displayWithUnknownWorkstation()) {
+      return original.call(recipeManager, emiRecipeCategory);
+    }
     return KnownItems.workstationsFiltered(emiRecipeCategory);
   }
 }

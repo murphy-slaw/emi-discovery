@@ -2,10 +2,10 @@ package net.funkpla.emi_discovery.mixin.emi;
 
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import com.mojang.blaze3d.systems.RenderSystem;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.runtime.EmiDrawContext;
 import dev.emi.emi.screen.tooltip.TagTooltipComponent;
-import net.funkpla.emi_discovery.CommonClass;
 import net.funkpla.emi_discovery.KnownItems;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -40,8 +40,14 @@ public class TagTooltipComponentMixin {
       int y,
       int flags,
       Operation<Void> original) {
-    if (CommonClass.isDisabled() || KnownItems.shouldIngredientDisplay(emiIngredient))
+    if (KnownItems.shouldIngredientDisplay(emiIngredient)) {
       original.call(drawContext, emiIngredient, x, y, flags);
-    else drawContext.fill(x, y, 16, 16, 0x0FFFFFFF);
+    } else if (KnownItems.shouldBlackoutRecipes()) {
+      RenderSystem.setShaderColor(0.0f, 0.0f, 0.0f, 1.0f);
+      original.call(drawContext, emiIngredient, x, y, flags);
+      RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+    } else {
+      drawContext.fill(x, y, 16, 16, 0x0FFFFFFF);
+    }
   }
 }

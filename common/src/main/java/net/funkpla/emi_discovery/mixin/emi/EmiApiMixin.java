@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
-import net.funkpla.emi_discovery.CommonClass;
 import net.funkpla.emi_discovery.KnownItems;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,8 +29,11 @@ public abstract class EmiApiMixin {
       at = @At(value = "INVOKE", target = "Ljava/util/List;get(I)Ljava/lang/Object;"),
       cancellable = true)
   private static void stopEmptyRecipeTabs(EmiIngredient stack, CallbackInfo ci) {
-    if (EmiApi.getRecipeManager().getRecipesByOutput(stack.getEmiStacks().get(0)).stream()
-        .noneMatch(KnownItems::areAllKnown)) ci.cancel();
+    if (!KnownItems.shouldBlackoutRecipes()
+        && EmiApi.getRecipeManager().getRecipesByOutput(stack.getEmiStacks().get(0)).stream()
+            .noneMatch(KnownItems::areAllKnown)) {
+      ci.cancel();
+    }
   }
 
   /** Filter out unknown recipes when building the recipe display. */
@@ -42,8 +44,6 @@ public abstract class EmiApiMixin {
   private static Stream<Map.Entry<EmiRecipeCategory, List<EmiRecipe>>> filterRecipeMap(
       Set<Map.Entry<EmiRecipeCategory, List<EmiRecipe>>> instance,
       Operation<Stream<Map.Entry<EmiRecipeCategory, List<EmiRecipe>>>> original) {
-      if (CommonClass.isDisabled())
-          return original.call(instance);
     return KnownItems.filterEntrySet(instance);
   }
 }

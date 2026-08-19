@@ -1,6 +1,59 @@
 {
-    "text.autoconfig.emi_discovery.title": "EMIDiscovery",
-    "text.autoconfig.emi_discovery.option.displayCraftableInIndex": "Display craftable unknown items in the index?",
-    "text.autoconfig.emi_discovery.option.displayWithUnknownWorkstation": "Display recipes for undiscovered workstations?",
-    "text.autoconfig.emi_discovery.option.enableForCreativeMode": "Enable filtering in Creative mode?"
+    "text.autoconfig.emi_discovery.title": "EMI Discovery",
+
+    "tooltip.emi_discovery.obscured": "???",
+
+    "text.autoconfig.emi_discovery.category.general": "General",
+    "text.autoconfig.emi_discovery.category.index": "Index & Sidebar",
+    "text.autoconfig.emi_discovery.category.recipes": "Recipe Viewing",
+    "text.autoconfig.emi_discovery.category.blackout": "Blackout & Visuals",
+    "text.autoconfig.emi_discovery.category.advancements": "Advancement Progression",
+
+    "text.autoconfig.emi_discovery.option.enabled": "Enable Discovery Filtering",
+    "text.autoconfig.emi_discovery.option.enabled.@Tooltip[0]": "Global toggle for EMI Discovery.",
+    "text.autoconfig.emi_discovery.option.enabled.@Tooltip[1]": "When disabled, all discovery restrictions are lifted and EMI operates in standard mode.",
+
+    "text.autoconfig.emi_discovery.option.filterIndex": "Filter Items in Index",
+    "text.autoconfig.emi_discovery.option.filterIndex.@Tooltip[0]": "When enabled, undiscovered items are hidden from EMI's index and search sidebar.",
+    "text.autoconfig.emi_discovery.option.filterIndex.@Tooltip[1]": "When disabled, all items remain visible in the index, while recipe tree filtering still applies.",
+
+    "text.autoconfig.emi_discovery.option.displayCraftableInIndex": "Display Craftable Items in Index",
+    "text.autoconfig.emi_discovery.option.displayCraftableInIndex.@Tooltip[0]": "When enabled, items you haven't held yet will still appear in EMI's index sidebar",
+    "text.autoconfig.emi_discovery.option.displayCraftableInIndex.@Tooltip[1]": "if all of their required ingredients and crafting requirements have already been discovered.",
+
+    "text.autoconfig.emi_discovery.option.requireWorkstationForCraftable": "Require Workstation for Craftable Items",
+    "text.autoconfig.emi_discovery.option.requireWorkstationForCraftable.@Tooltip[0]": "When enabled, craftable items only appear in the index if you have also",
+    "text.autoconfig.emi_discovery.option.requireWorkstationForCraftable.@Tooltip[1]": "discovered the required workstation (e.g., Crafting Table, Furnace, Loom).",
+
+    "text.autoconfig.emi_discovery.option.displayWithUnknownWorkstation": "Display Recipes for Undiscovered Workstations",
+    "text.autoconfig.emi_discovery.option.displayWithUnknownWorkstation.@Tooltip[0]": "When enabled, recipes show even if you have not yet discovered the required workstation.",
+    "text.autoconfig.emi_discovery.option.displayWithUnknownWorkstation.@Tooltip[1]": "When disabled, recipes remain hidden until you discover the station used to craft them.",
+
+    "text.autoconfig.emi_discovery.option.requireCatalystsKnown": "Require Known Catalysts for Recipes",
+    "text.autoconfig.emi_discovery.option.requireCatalystsKnown.@Tooltip[0]": "When enabled, recipes requiring catalysts (such as smithing templates or brewing fuel)",
+    "text.autoconfig.emi_discovery.option.requireCatalystsKnown.@Tooltip[1]": "will require that catalyst to be discovered before revealing the recipe.",
+
+    "text.autoconfig.emi_discovery.option.allowRecipeLookupForUndiscovered": "Allow Recipe Lookup on Undiscovered Items",
+    "text.autoconfig.emi_discovery.option.allowRecipeLookupForUndiscovered.@Tooltip[0]": "When enabled, pressing the recipe key (R) or clicking on undiscovered/blacked-out",
+    "text.autoconfig.emi_discovery.option.allowRecipeLookupForUndiscovered.@Tooltip[1]": "items in recipe trees will look up recipes to craft that item.",
+
+    "text.autoconfig.emi_discovery.option.allowUsageLookupForUndiscovered": "Allow Usage Lookup on Undiscovered Items",
+    "text.autoconfig.emi_discovery.option.allowUsageLookupForUndiscovered.@Tooltip[0]": "When enabled, pressing the usage key (U) or right-clicking on undiscovered/blacked-out",
+    "text.autoconfig.emi_discovery.option.allowUsageLookupForUndiscovered.@Tooltip[1]": "items will look up what recipes that item can be used in.",
+
+    "text.autoconfig.emi_discovery.option.blackoutUnknownInRecipes": "Black Out Unknown Items in Recipes",
+    "text.autoconfig.emi_discovery.option.blackoutUnknownInRecipes.@Tooltip[0]": "When enabled, recipes with undiscovered items are displayed using black silhouettes",
+    "text.autoconfig.emi_discovery.option.blackoutUnknownInRecipes.@Tooltip[1]": "instead of hiding the recipe from the view entirely.",
+
+    "text.autoconfig.emi_discovery.option.obscureTooltips": "Obscure Tooltips on Blacked-Out Items",
+    "text.autoconfig.emi_discovery.option.obscureTooltips.@Tooltip[0]": "When enabled, hover tooltips on undiscovered/blacked-out items display '???'.",
+    "text.autoconfig.emi_discovery.option.obscureTooltips.@Tooltip[1]": "When disabled, full item names and properties remain visible on hover.",
+
+    "text.autoconfig.emi_discovery.option.showQuestionMarkOverlay": "Show '?' Badge on Blacked-Out Items",
+    "text.autoconfig.emi_discovery.option.showQuestionMarkOverlay.@Tooltip[0]": "When enabled, a distinct '?' icon is rendered in the bottom-right corner",
+    "text.autoconfig.emi_discovery.option.showQuestionMarkOverlay.@Tooltip[1]": "of blacked-out item silhouettes to make undiscovered items easy to identify.",
+
+    "text.autoconfig.emi_discovery.option.enableAdvancementDiscovery": "Enable Advancement Discovery",
+    "text.autoconfig.emi_discovery.option.enableAdvancementDiscovery.@Tooltip[0]": "When enabled, completing advancements unlocks items and tags",
+    "text.autoconfig.emi_discovery.option.enableAdvancementDiscovery.@Tooltip[1]": "configured in advancement rule files (config/emi_discovery/advancements/)."
 }

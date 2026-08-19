@@ -8,6 +8,7 @@
         "MinecraftServerStorageSourceAccessor"
     ],
     "client": [
+        "ClientAdvancementsMixin",
         "emi.EmiApiMixin",
         "emi.EmiIngredientRecipeMixin",
         "emi.EmiScreenManagerMixin",
