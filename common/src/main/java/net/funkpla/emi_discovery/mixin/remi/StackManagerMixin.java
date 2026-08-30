@@ -1,9 +1,10 @@
-package net.funkpla.emi_discovery.mixin.emixx;
+package net.funkpla.emi_discovery.mixin.remi;
 
-import concerrox.emixx.content.StackManager;
+import com.evandev.remi.integration.emi.StackManager;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
 import net.funkpla.emi_discovery.KnownItems;
+import net.funkpla.emi_discovery.mixin.emixx.EMIxxStackManagerAccessor;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -15,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.List;
 
 @Mixin(StackManager.class)
-public class EMIxxStackManagerMixin {
+public class StackManagerMixin {
 
     @Unique
     @Nullable

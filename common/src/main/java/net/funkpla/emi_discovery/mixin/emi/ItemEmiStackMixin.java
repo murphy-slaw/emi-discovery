@@ -1,13 +1,15 @@
 package net.funkpla.emi_discovery.mixin.emi;
 
-import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
-import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import dev.emi.emi.api.stack.ItemEmiStack;
-import dev.emi.emi.runtime.EmiDrawContext;
 import net.funkpla.emi_discovery.KnownItems;
-import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+
+import net.minecraft.network.chat.Component;
+
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+import dev.emi.emi.runtime.EmiDrawContext;
 
 @SuppressWarnings("UnstableApiUsage")
 @Mixin(ItemEmiStack.class)

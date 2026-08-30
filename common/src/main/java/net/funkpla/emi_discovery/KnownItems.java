@@ -9,14 +9,13 @@ import com.google.gson.JsonElement;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import com.mojang.authlib.GameProfile;
-import concerrox.emixx.content.stackgroup.EmiGroupStack;
-import concerrox.emixx.content.stackgroup.GroupedEmiStack;
+import com.evandev.remi.feature.stackgroup.EmiGroupStack;
+import com.evandev.remi.feature.stackgroup.GroupedEmiStack;
 import dev.emi.emi.api.EmiApi;
 import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.recipe.EmiRecipeCategory;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
-import dev.emi.emi.api.stack.ItemEmiStack;
 import dev.emi.emi.registry.EmiRecipes;
 import java.io.File;
 import java.io.FileReader;
@@ -32,21 +31,29 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import dev.emi.emi.screen.EmiScreenManager;
+import net.funkpla.emi_discovery.mixin.BucketItemAccessor;
 import net.funkpla.emi_discovery.mixin.MinecraftServerStorageSourceAccessor;
 import net.funkpla.emi_discovery.platform.Services;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.server.IntegratedServer;
+import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
+import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.material.Fluids;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
 
-@SuppressWarnings("UnstableApiUsage")
 public class KnownItems {
   private static final Set<Item> knownItems = new HashSet<>();
+  private static final Set<Fluid> knownFluids = new HashSet<>();
+  private static final Set<MobEffect> knownEffects = new HashSet<>();
   private static final File PRE_DISCOVERED =
       new File("config", "emi_discovery_pre_discovered.json");
   private static final Path DATA_PATH =
@@ -76,6 +83,10 @@ public class KnownItems {
     stackDisplayCache.invalidateAll();
     UPDATE_COUNT.getAndIncrement();
     try {
+      EmiGroupStack.onStackFilterChanged();
+    } catch (Throwable ignored) {
+    }
+    try {
       if (EmiScreenManager.search != null) {
         EmiScreenManager.search.update();
       }
@@ -84,9 +95,52 @@ public class KnownItems {
   }
 
   public static void addKnown(ItemStack stack) {
-    if (knownItems.add(stack.getItem())) {
+    if (stack != null && !stack.isEmpty()) {
+      Item item = stack.getItem();
+      boolean itemAdded = knownItems.add(item);
+      boolean fluidAdded = false;
+
+      if (item instanceof BucketItem bucketItem) {
+        try {
+          Fluid fluid = ((BucketItemAccessor) bucketItem).emi_discovery$getContent();
+          if (fluid != null && fluid != Fluids.EMPTY && knownFluids.add(fluid)) {
+            fluidAdded = true;
+          }
+        } catch (Throwable ignored) {
+        }
+      }
+      for (Fluid fluid : BuiltInRegistries.FLUID) {
+        if (fluid != null && fluid != Fluids.EMPTY && fluid.getBucket() == item) {
+          if (knownFluids.add(fluid)) {
+            fluidAdded = true;
+          }
+        }
+      }
+
+      if (itemAdded || fluidAdded) {
+        invalidateCache();
+        saveToDisk();
+      }
+    }
+  }
+
+  public static void addKnown(Fluid fluid) {
+    if (fluid != null && fluid != Fluids.EMPTY && knownFluids.add(fluid)) {
       invalidateCache();
       saveToDisk();
+    }
+  }
+
+  public static void addKnown(MobEffect effect) {
+    if (effect != null && knownEffects.add(effect)) {
+      invalidateCache();
+      saveToDisk();
+    }
+  }
+
+  public static void addKnown(Holder<MobEffect> effectHolder) {
+    if (effectHolder != null) {
+        addKnown(effectHolder.value());
     }
   }
 
@@ -104,8 +158,38 @@ public class KnownItems {
     return anyAdded;
   }
 
+  public static boolean addKnownFluids(Collection<Fluid> fluids) {
+    boolean anyAdded = false;
+    for (Fluid fluid : fluids) {
+      if (fluid != null && fluid != Fluids.EMPTY && knownFluids.add(fluid)) {
+        anyAdded = true;
+      }
+    }
+    if (anyAdded) {
+      invalidateCache();
+      saveToDisk();
+    }
+    return anyAdded;
+  }
+
+  public static boolean addKnownEffects(Collection<MobEffect> effects) {
+    boolean anyAdded = false;
+    for (MobEffect effect : effects) {
+      if (effect != null && knownEffects.add(effect)) {
+        anyAdded = true;
+      }
+    }
+    if (anyAdded) {
+      invalidateCache();
+      saveToDisk();
+    }
+    return anyAdded;
+  }
+
   public static void clear() {
     knownItems.clear();
+    knownFluids.clear();
+    knownEffects.clear();
     invalidateCache();
   }
 
@@ -117,11 +201,42 @@ public class KnownItems {
    */
   public static boolean isKnown(ItemStack stack) {
     if (!isModEnabled()) return true;
-    return stack == ItemStack.EMPTY || knownItems.contains(stack.getItem());
+    return stack == null || stack.isEmpty() || knownItems.contains(stack.getItem());
+  }
+
+  /** Does the fluid exist in the known set or has its bucket item been discovered? */
+  public static boolean isKnown(Fluid fluid) {
+    if (!isModEnabled() || !isFluidDiscoveryEnabled()) return true;
+    if (fluid == null || fluid == Fluids.EMPTY) return true;
+    if (knownFluids.contains(fluid)) return true;
+    Item bucket = fluid.getBucket();
+    return bucket != Items.AIR && knownItems.contains(bucket);
+  }
+
+  /** Does the mob effect exist in the known set? */
+  public static boolean isKnown(MobEffect effect) {
+    if (!isModEnabled() || !isEffectDiscoveryEnabled()) return true;
+    if (effect == null) return true;
+    return knownEffects.contains(effect);
   }
 
   /** Convenience method to unwrap EmiStacks for the above. */
   public static boolean isKnown(EmiStack stack) {
+    if (stack == null) return true;
+    if (stack instanceof EmiGroupStack groupStack) return isKnown(groupStack);
+    if (stack instanceof GroupedEmiStack<?> groupedStack) return isKnown(groupedStack.realStack);
+    if (stack.isEmpty()) return true;
+    if (stack.getKey() instanceof Fluid fluid) return isKnown(fluid);
+    if (stack.getKey() instanceof MobEffect effect) return isKnown(effect);
+    if (stack.getKey() instanceof Holder<?> holder && holder.value() instanceof MobEffect effect) return isKnown(effect);
+    if (stack.getId() != null) {
+      if (BuiltInRegistries.FLUID.containsKey(stack.getId())) {
+        return isKnown(BuiltInRegistries.FLUID.get(stack.getId()));
+      }
+      if (BuiltInRegistries.MOB_EFFECT.containsKey(stack.getId())) {
+        return isKnown(BuiltInRegistries.MOB_EFFECT.get(stack.getId()));
+      }
+    }
     return isKnown(stack.getItemStack());
   }
 
@@ -142,7 +257,10 @@ public class KnownItems {
    * and returns true if any of the items associated with any of the GroupedEmiStacks are known.
    */
   public static boolean isKnown(EmiGroupStack groupStack) {
-    return groupStack.getItems().stream().anyMatch(KnownItems::areAnyKnown);
+    if (groupStack == null) return false;
+    var items = groupStack.getItems();
+    if (items.isEmpty()) return false;
+    return items.stream().anyMatch(KnownItems::isKnown);
   }
 
   /** Returns true if any of the EmiStacks in the EmiIngredient are known. */
@@ -155,13 +273,11 @@ public class KnownItems {
    * differ slightly for different subclasses of EmiStack. Bleah.
    */
   public static boolean isKnownOrCraftable(EmiStack emiStack) {
-    if (emiStack instanceof ItemEmiStack itemEmiStack)
-      return (isCraftable(itemEmiStack) || isKnown(itemEmiStack));
     if (emiStack instanceof EmiGroupStack groupStack)
       return (isCraftable(groupStack) || isKnown(groupStack));
     if (emiStack instanceof GroupedEmiStack<?> groupedStack)
       return (isKnownOrCraftable(groupedStack));
-    return true;
+    return (isCraftable(emiStack) || isKnown(emiStack));
   }
 
   public static EmiDiscoveryConfig getConfig() {
@@ -173,6 +289,14 @@ public class KnownItems {
 
   public static boolean isModEnabled() {
     return getConfig().enabled;
+  }
+
+  public static boolean isFluidDiscoveryEnabled() {
+    return isModEnabled() && getConfig().enableFluidDiscovery;
+  }
+
+  public static boolean isEffectDiscoveryEnabled() {
+    return isModEnabled() && getConfig().enableEffectDiscovery;
   }
 
   public static boolean shouldFilterIndex() {
@@ -220,13 +344,14 @@ public class KnownItems {
   }
 
   /**
-   * For ItemEmiStacks, we call the stack craftable if any recipe for the item has a known (or empty
+   * For EmiStacks, we call the stack craftable if any recipe for the stack has a known (or empty
    * catalyst), has at least one known workstation (if required), and can be made entirely with known items.
    */
-  public static boolean isCraftable(ItemEmiStack itemEmiStack) {
+  public static boolean isCraftable(EmiStack emiStack) {
+    if (emiStack instanceof EmiGroupStack groupStack) return isCraftable(groupStack);
     try {
       boolean reqWorkstation = requireWorkstationForCraftable();
-      return EmiRecipes.manager.getRecipesByOutput(itemEmiStack).stream()
+      return EmiRecipes.manager.getRecipesByOutput(emiStack).stream()
           .filter(
               recipe ->
                   (recipe.getCatalysts().isEmpty() || catalystsKnown(recipe))
@@ -241,19 +366,19 @@ public class KnownItems {
     }
   }
 
-  /** For EmiGroupStacks, we call the stack craftable if any of the ItemEmiStacks are craftable. */
+  /** For EmiGroupStacks, we call the stack craftable if any of the real stacks are craftable. */
   public static boolean isCraftable(EmiGroupStack groupStack) {
-    return groupStack.getItems().stream()
+    if (groupStack == null) return false;
+    var items = groupStack.getItems();
+    if (items.isEmpty()) return false;
+    return items.stream()
         .anyMatch(
-            groupedStack ->
-                groupedStack.getRealStack() instanceof ItemEmiStack itemEmiStack
-                    && isCraftable(itemEmiStack));
+            groupedStack -> isCraftable(groupedStack.realStack));
   }
 
   /** For GroupedEmiStacks, we unwrap the real stack and check it. */
   public static boolean isKnownOrCraftable(GroupedEmiStack<?> groupedStack) {
-    return (groupedStack.getRealStack() instanceof ItemEmiStack itemEmiStack)
-        && (isCraftable(itemEmiStack) || isKnown(itemEmiStack));
+    return isCraftable(groupedStack.realStack) || isKnown(groupedStack.realStack);
   }
 
   /**
@@ -271,6 +396,11 @@ public class KnownItems {
   public static boolean shouldStackDisplayUncached(EmiStack emiStack) {
     if (!shouldFilterIndex()) {
       return true;
+    }
+    if (emiStack instanceof EmiGroupStack groupStack) {
+      if (groupStack.getItems().isEmpty()) {
+        return false;
+      }
     }
     return shouldDisplayCraftableInIndex()
         ? isKnownOrCraftable(emiStack)
@@ -364,8 +494,20 @@ public class KnownItems {
         Constants.LOG.info("Loading existing discoveries");
         JsonArray json = gson.fromJson(jsonReader, JsonArray.class);
 
-        for (JsonElement element : json) {
-          knownItems.add(BuiltInRegistries.ITEM.get(new ResourceLocation(element.getAsString())));
+        if (json != null) {
+          for (JsonElement element : json) {
+            ResourceLocation loc = ResourceLocation.tryParse(element.getAsString());
+            if (loc == null) continue;
+            if (BuiltInRegistries.ITEM.containsKey(loc)) {
+              knownItems.add(BuiltInRegistries.ITEM.get(loc));
+            }
+            if (BuiltInRegistries.FLUID.containsKey(loc)) {
+              knownFluids.add(BuiltInRegistries.FLUID.get(loc));
+            }
+            if (BuiltInRegistries.MOB_EFFECT.containsKey(loc)) {
+              knownEffects.add(BuiltInRegistries.MOB_EFFECT.get(loc));
+            }
+          }
         }
 
       } catch (Exception e) {
@@ -374,35 +516,21 @@ public class KnownItems {
         IOUtils.closeQuietly(reader);
       }
     }
-
-    /*
-    if (TOOLTIPS.exists()) {
-        Reader reader = null;
-        try {
-            reader = new FileReader(TOOLTIPS);
-            JsonReader jsonReader = new JsonReader(reader);
-            DiscoveredEnoughItems.LOG.info("Loading tooltips");
-            JsonObject json = gson.fromJson(jsonReader, JsonObject.class);
-
-            for (Map.Entry<String, JsonElement> entry : json.entrySet()) {
-                Item item = BuiltInRegistries.ITEM.get(new ResourceLocation(entry.getKey()));
-                Component component = Component.Serializer.fromJson(entry.getValue().getAsString());
-                tooltips.put(item, component);
-            }
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        } finally {
-            IOUtils.closeQuietly(reader);
-        }
-    }
-     */
   }
 
   static JsonArray discoveredToJson() {
     JsonArray array = new JsonArray();
     for (Item item : knownItems) {
-      array.add(BuiltInRegistries.ITEM.getKey(item).toString());
+      ResourceLocation loc = BuiltInRegistries.ITEM.getKey(item);
+      array.add(loc.toString());
+    }
+    for (Fluid fluid : knownFluids) {
+      ResourceLocation loc = BuiltInRegistries.FLUID.getKey(fluid);
+      array.add(loc.toString());
+    }
+    for (MobEffect effect : knownEffects) {
+      ResourceLocation loc = BuiltInRegistries.MOB_EFFECT.getKey(effect);
+      if (loc != null) array.add(loc.toString());
     }
     return array;
   }

@@ -12,6 +12,14 @@ public class EmiDiscoveryConfig implements ConfigData {
     @ConfigEntry.Gui.Tooltip(count = 2)
     public boolean enabled = true;
 
+    @ConfigEntry.Category("general")
+    @ConfigEntry.Gui.Tooltip(count = 2)
+    public boolean enableFluidDiscovery = true;
+
+    @ConfigEntry.Category("general")
+    @ConfigEntry.Gui.Tooltip(count = 2)
+    public boolean enableEffectDiscovery = true;
+
     // Index & Sidebar
     @ConfigEntry.Category("index")
     @ConfigEntry.Gui.Tooltip(count = 2)

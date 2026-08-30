@@ -2,12 +2,15 @@ package net.funkpla.emi_discovery.advancement;
 
 import com.google.gson.annotations.SerializedName;
 import net.funkpla.emi_discovery.Constants;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.tags.TagKey;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.material.Fluid;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -24,6 +27,12 @@ public class AdvancementDiscoveryRule {
     @SerializedName(value = "items", alternate = {"item"})
     public Set<String> items = new HashSet<>();
 
+    @SerializedName(value = "fluids", alternate = {"fluid"})
+    public Set<String> fluids = new HashSet<>();
+
+    @SerializedName(value = "effects", alternate = {"effect", "mob_effects", "mob_effect", "status_effects", "status_effect"})
+    public Set<String> effects = new HashSet<>();
+
     @SerializedName(value = "tags", alternate = {"tag"})
     public Set<String> tags = new HashSet<>();
 
@@ -36,6 +45,8 @@ public class AdvancementDiscoveryRule {
     public List<String> patterns = new ArrayList<>();
 
     private transient volatile Set<Item> resolvedItemsCache = null;
+    private transient volatile Set<Fluid> resolvedFluidsCache = null;
+    private transient volatile Set<MobEffect> resolvedEffectsCache = null;
     private transient volatile List<Pattern> compiledPatterns = null;
 
     public boolean isSatisfied() {
@@ -52,78 +63,98 @@ public class AdvancementDiscoveryRule {
     }
 
     public Set<Item> getOrResolveItems() {
-        if (resolvedItemsCache != null) {
-            return resolvedItemsCache;
-        }
+        if (resolvedItemsCache != null) return resolvedItemsCache;
         synchronized (this) {
-            if (resolvedItemsCache != null) {
-                return resolvedItemsCache;
-            }
-            Set<Item> resolved = new HashSet<>();
-
-            // items or tags prefixed by #
-            if (items != null) {
-                for (String entry : items) {
-                    if (entry == null || entry.isEmpty()) continue;
-                    if (entry.startsWith("#")) {
-                        resolveTag(entry.substring(1), resolved);
-                    } else {
-                        ResourceLocation loc = ResourceLocation.tryParse(entry);
-                        if (loc != null && BuiltInRegistries.ITEM.containsKey(loc)) {
-                            resolved.add(BuiltInRegistries.ITEM.get(loc));
-                        }
-                    }
-                }
-            }
-
-            // tags
-            if (tags != null) {
-                for (String tagStr : tags) {
-                    if (tagStr == null || tagStr.isEmpty()) continue;
-                    String clean = tagStr.startsWith("#") ? tagStr.substring(1) : tagStr;
-                    resolveTag(clean, resolved);
-                }
-            }
-
-            // mod filters
-            if (mod != null && !mod.isEmpty()) {
-                for (Map.Entry<ResourceKey<Item>, Item> entry : BuiltInRegistries.ITEM.entrySet()) {
-                    if (mod.contains(entry.getKey().location().getNamespace())) {
-                        resolved.add(entry.getValue());
-                    }
-                }
-            }
-
-            // regex patterns
-            List<Pattern> patternList = getCompiledPatterns();
-            if (!patternList.isEmpty()) {
-                for (Map.Entry<ResourceKey<Item>, Item> entry : BuiltInRegistries.ITEM.entrySet()) {
-                    String idStr = entry.getKey().location().toString();
-                    for (Pattern p : patternList) {
-                        if (p.matcher(idStr).matches()) {
-                            resolved.add(entry.getValue());
-                            break;
-                        }
-                    }
-                }
-            }
-
-            resolvedItemsCache = Collections.unmodifiableSet(resolved);
+            if (resolvedItemsCache != null) return resolvedItemsCache;
+            resolvedItemsCache = Collections.unmodifiableSet(
+                resolveRegistryEntries(BuiltInRegistries.ITEM, Registries.ITEM, items, tags)
+            );
             return resolvedItemsCache;
         }
     }
 
-    private void resolveTag(String tagString, Set<Item> output) {
+    public Set<Fluid> getOrResolveFluids() {
+        if (resolvedFluidsCache != null) return resolvedFluidsCache;
+        synchronized (this) {
+            if (resolvedFluidsCache != null) return resolvedFluidsCache;
+            resolvedFluidsCache = Collections.unmodifiableSet(
+                resolveRegistryEntries(BuiltInRegistries.FLUID, Registries.FLUID, fluids, items, tags)
+            );
+            return resolvedFluidsCache;
+        }
+    }
+
+    public Set<MobEffect> getOrResolveEffects() {
+        if (resolvedEffectsCache != null) return resolvedEffectsCache;
+        synchronized (this) {
+            if (resolvedEffectsCache != null) return resolvedEffectsCache;
+            resolvedEffectsCache = Collections.unmodifiableSet(
+                resolveRegistryEntries(BuiltInRegistries.MOB_EFFECT, Registries.MOB_EFFECT, effects, items, tags)
+            );
+            return resolvedEffectsCache;
+        }
+    }
+
+    @SafeVarargs
+    private <T> Set<T> resolveRegistryEntries(Registry<T> registry, ResourceKey<? extends Registry<T>> registryKey, Set<String>... candidateSets) {
+        Set<T> resolved = new HashSet<>();
+
+        if (candidateSets != null) {
+            for (Set<String> set : candidateSets) {
+                if (set == null || set.isEmpty()) continue;
+                for (String entry : set) {
+                    if (entry == null || entry.isEmpty()) continue;
+                    if (entry.startsWith("#")) {
+                        resolveTag(entry.substring(1), registry, registryKey, resolved);
+                    } else {
+                        ResourceLocation loc = ResourceLocation.tryParse(entry);
+                        if (loc != null && registry.containsKey(loc)) {
+                            resolved.add(registry.get(loc));
+                        }
+                    }
+                }
+            }
+        }
+
+        // Mod namespace filters
+        if (mod != null && !mod.isEmpty()) {
+            for (Map.Entry<ResourceKey<T>, T> entry : registry.entrySet()) {
+                if (mod.contains(entry.getKey().location().getNamespace())) {
+                    resolved.add(entry.getValue());
+                }
+            }
+        }
+
+        // Regex patterns
+        List<Pattern> patternList = getCompiledPatterns();
+        if (!patternList.isEmpty()) {
+            for (Map.Entry<ResourceKey<T>, T> entry : registry.entrySet()) {
+                String idStr = entry.getKey().location().toString();
+                for (Pattern p : patternList) {
+                    if (p.matcher(idStr).matches()) {
+                        resolved.add(entry.getValue());
+                        break;
+                    }
+                }
+            }
+        }
+
+        return resolved;
+    }
+
+    private <T> void resolveTag(String tagString, Registry<T> registry, ResourceKey<? extends Registry<T>> registryKey, Set<T> output) {
         ResourceLocation tagLoc = ResourceLocation.tryParse(tagString);
         if (tagLoc == null) return;
-        TagKey<Item> tagKey = TagKey.create(Registries.ITEM, tagLoc);
-        BuiltInRegistries.ITEM.getTag(tagKey).ifPresent(holders -> {
+        TagKey<T> tagKey = TagKey.create(registryKey, tagLoc);
+        registry.getTag(tagKey).ifPresent(holders -> {
             holders.forEach(holder -> output.add(holder.value()));
         });
     }
 
     public void invalidateCache() {
         this.resolvedItemsCache = null;
+        this.resolvedFluidsCache = null;
+        this.resolvedEffectsCache = null;
     }
 
     private List<Pattern> getCompiledPatterns() {

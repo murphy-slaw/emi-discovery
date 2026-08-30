@@ -9,7 +9,9 @@ import net.funkpla.emi_discovery.Constants;
 import net.funkpla.emi_discovery.KnownItems;
 import net.funkpla.emi_discovery.platform.Services;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.material.Fluid;
 
 import java.io.FileReader;
 import java.lang.reflect.Type;
@@ -112,20 +114,7 @@ public class AdvancementDiscoveryManager {
 
     public static void evaluateAll() {
         if (!HAS_RULES || !KnownItems.isAdvancementDiscoveryEnabled()) return;
-        Set<Item> newlyDiscovered = new HashSet<>();
-
-        for (AdvancementDiscoveryRule rule : ALL_RULES) {
-            if (rule.isSatisfied()) {
-                newlyDiscovered.addAll(rule.getOrResolveItems());
-            }
-        }
-
-        if (!newlyDiscovered.isEmpty()) {
-            boolean changed = KnownItems.addKnownItems(newlyDiscovered);
-            if (changed && EmiScreenManager.search != null) {
-                EmiScreenManager.search.update();
-            }
-        }
+        applyRules(ALL_RULES);
     }
 
     public static void onAdvancementsUpdated(Set<ResourceLocation> changedAdvancements) {
@@ -140,20 +129,40 @@ public class AdvancementDiscoveryManager {
             }
         }
 
-        if (candidateRules.isEmpty()) return;
+        if (!candidateRules.isEmpty()) {
+            applyRules(candidateRules);
+        }
+    }
 
-        Set<Item> newlyDiscovered = new HashSet<>();
-        for (AdvancementDiscoveryRule rule : candidateRules) {
+    /**
+     * I'm sorry murphy, I don't really use javadocs
+     **/
+    private static void applyRules(Collection<AdvancementDiscoveryRule> rules) {
+        Set<Item> newlyDiscoveredItems = new HashSet<>();
+        Set<Fluid> newlyDiscoveredFluids = new HashSet<>();
+        Set<MobEffect> newlyDiscoveredEffects = new HashSet<>();
+
+        for (AdvancementDiscoveryRule rule : rules) {
             if (rule.isSatisfied()) {
-                newlyDiscovered.addAll(rule.getOrResolveItems());
+                newlyDiscoveredItems.addAll(rule.getOrResolveItems());
+                newlyDiscoveredFluids.addAll(rule.getOrResolveFluids());
+                newlyDiscoveredEffects.addAll(rule.getOrResolveEffects());
             }
         }
 
-        if (!newlyDiscovered.isEmpty()) {
-            boolean changed = KnownItems.addKnownItems(newlyDiscovered);
-            if (changed && EmiScreenManager.search != null) {
-                EmiScreenManager.search.update();
-            }
+        boolean changed = false;
+        if (!newlyDiscoveredItems.isEmpty()) {
+            changed |= KnownItems.addKnownItems(newlyDiscoveredItems);
+        }
+        if (!newlyDiscoveredFluids.isEmpty()) {
+            changed |= KnownItems.addKnownFluids(newlyDiscoveredFluids);
+        }
+        if (!newlyDiscoveredEffects.isEmpty()) {
+            changed |= KnownItems.addKnownEffects(newlyDiscoveredEffects);
+        }
+
+        if (changed && EmiScreenManager.search != null) {
+            EmiScreenManager.search.update();
         }
     }
 
@@ -200,6 +209,12 @@ public class AdvancementDiscoveryManager {
                     ],
                     "tags": [
                       "#minecraft:stone_tool_materials"
+                    ],
+                    "fluids": [
+                      "minecraft:water"
+                    ],
+                    "effects": [
+                      "minecraft:speed"
                     ]
                   }
                 ]

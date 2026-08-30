@@ -3,12 +3,18 @@
     "minVersion": "0.8",
     "package": "net.funkpla.emi_discovery.mixin",
     "refmap": "${mod_id}.refmap.json",
-    "compatibilityLevel": "JAVA_17",
+    "compatibilityLevel": "JAVA_18",
     "mixins": [
+        "BucketItemAccessor",
+        "BucketItemMixin",
+        "BottleItemMixin",
         "MinecraftServerStorageSourceAccessor"
     ],
     "client": [
         "ClientAdvancementsMixin",
+        "ClientPacketListenerMixin",
+        "LocalPlayerMixin",
+        "MultiPlayerGameModeMixin",
         "emi.EmiApiMixin",
         "emi.EmiIngredientRecipeMixin",
         "emi.EmiScreenManagerMixin",
@@ -25,8 +31,8 @@
         "emi.accessor.EmiTagRecipeAccessor",
         "emi.accessor.IngredientTooltipComponentAccessor",
         "emi.accessor.TagEmiIngredientAccessor",
-        "emixx.EMIxxStackManagerAccessor",
-        "emixx.EMIxxStackManagerMixin"
+        "remi.EmiGroupStackMixin",
+        "remi.StackManagerMixin"
     ],
     "server": [
     ],

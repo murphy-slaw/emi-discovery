@@ -13,6 +13,14 @@
     "text.autoconfig.emi_discovery.option.enabled.@Tooltip[0]": "Global toggle for EMI Discovery.",
     "text.autoconfig.emi_discovery.option.enabled.@Tooltip[1]": "When disabled, all discovery restrictions are lifted and EMI operates in standard mode.",
 
+    "text.autoconfig.emi_discovery.option.enableFluidDiscovery": "Enable Fluid Discovery",
+    "text.autoconfig.emi_discovery.option.enableFluidDiscovery.@Tooltip[0]": "When enabled, undiscovered fluids are hidden or blacked out.",
+    "text.autoconfig.emi_discovery.option.enableFluidDiscovery.@Tooltip[1]": "When disabled, all fluids are considered discovered and visible.",
+
+    "text.autoconfig.emi_discovery.option.enableEffectDiscovery": "Enable Status Effect Discovery",
+    "text.autoconfig.emi_discovery.option.enableEffectDiscovery.@Tooltip[0]": "When enabled, undiscovered status effects are hidden or blacked out.",
+    "text.autoconfig.emi_discovery.option.enableEffectDiscovery.@Tooltip[1]": "When disabled, all status effects are considered discovered and visible.",
+
     "text.autoconfig.emi_discovery.option.filterIndex": "Filter Items in Index",
     "text.autoconfig.emi_discovery.option.filterIndex.@Tooltip[0]": "When enabled, undiscovered items are hidden from EMI's index and search sidebar.",
     "text.autoconfig.emi_discovery.option.filterIndex.@Tooltip[1]": "When disabled, all items remain visible in the index, while recipe tree filtering still applies.",
