@@ -9,21 +9,29 @@ import net.funkpla.emi_discovery.KnownItems;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
+import java.util.ArrayList;
 import java.util.List;
 
-@Mixin(EmiGroupStack.class)
+@Mixin(value = EmiGroupStack.class, remap = false)
 public class EmiGroupStackMixin {
 
     /**
      * Filter undiscovered items from REMI's EmiGroupStack.
      */
-    @ModifyReturnValue(method = "getItems", at = @At("RETURN"), remap = false)
+    @ModifyReturnValue(method = "getItems", at = @At("RETURN"))
     private List<GroupedEmiStack<EmiStack>> filterUndiscoveredGroupItems(List<GroupedEmiStack<EmiStack>> original) {
         if (!KnownItems.isModEnabled() || !KnownItems.shouldFilterIndex() || EmiConfig.editMode) {
             return original;
         }
-        return original.stream()
-                .filter(item -> KnownItems.shouldStackDisplay(item.realStack))
-                .toList();
+        if (original == null || original.isEmpty()) {
+            return original;
+        }
+        List<GroupedEmiStack<EmiStack>> result = new ArrayList<>(original.size());
+        for (GroupedEmiStack<EmiStack> item : original) {
+            if (KnownItems.shouldStackDisplay(item.realStack)) {
+                result.add(item);
+            }
+        }
+        return result;
     }
 }

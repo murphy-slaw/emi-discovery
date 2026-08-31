@@ -17,35 +17,35 @@ import java.util.List;
 
 @Mixin(EmiIngredientRecipe.class)
 public class EmiIngredientRecipeMixin {
-  /**
-   * Filter unknown items from the stacks returned by getStacks() if the recipe is a TagRecipe. If
-   * the resulting list is empty, return a list with one empty ingredient to prevent an exception.
-   *
-   * @param ingredientRecipe the recipe to filter
-   * @param original original operation, called for non-TagRecipes
-   * @return ingredient list with unknown items removed, or a list of one empty ingredient
-   */
-  @SuppressWarnings("UnstableApiUsage")
-  @WrapOperation(
-      remap = false,
-      method = "getInputs",
-      at =
-          @At(
-              target = "Ldev/emi/emi/api/recipe/EmiIngredientRecipe;getStacks()Ljava/util/List;",
-              value = "INVOKE"))
-  private List<EmiIngredient> filterInputs(
-      EmiIngredientRecipe ingredientRecipe, Operation<List<EmiIngredient>> original) {
-    if (ingredientRecipe instanceof EmiTagRecipe tagRecipe) {
-      if (KnownItems.shouldBlackoutRecipes()) {
+    /**
+     * Filter unknown items from the stacks returned by getStacks() if the recipe is a TagRecipe. If
+     * the resulting list is empty, return a list with one empty ingredient to prevent an exception.
+     *
+     * @param ingredientRecipe the recipe to filter
+     * @param original         original operation, called for non-TagRecipes
+     * @return ingredient list with unknown items removed, or a list of one empty ingredient
+     */
+    @SuppressWarnings("UnstableApiUsage")
+    @WrapOperation(
+            remap = false,
+            method = "getInputs",
+            at =
+            @At(
+                    target = "Ldev/emi/emi/api/recipe/EmiIngredientRecipe;getStacks()Ljava/util/List;",
+                    value = "INVOKE"))
+    private List<EmiIngredient> filterInputs(
+            EmiIngredientRecipe ingredientRecipe, Operation<List<EmiIngredient>> original) {
+        if (ingredientRecipe instanceof EmiTagRecipe tagRecipe) {
+            if (KnownItems.shouldBlackoutRecipes()) {
+                return original.call(ingredientRecipe);
+            }
+
+            List<EmiIngredient> emiIngredients = new ArrayList<>();
+            emiIngredients.add(new ListEmiIngredient(((EmiTagRecipeAccessor) tagRecipe).getStacks(), 1L));
+            List<EmiIngredient> filtered = emiIngredients.stream().filter(KnownItems::shouldIngredientDisplay).toList();
+
+            return filtered.isEmpty() ? List.of(EmiIngredient.of(Ingredient.EMPTY)) : filtered;
+        }
         return original.call(ingredientRecipe);
-      }
-
-      List<EmiIngredient> emiIngredients = new ArrayList<>();
-      emiIngredients.add(new ListEmiIngredient(((EmiTagRecipeAccessor) tagRecipe).getStacks(), 1L));
-      List<EmiIngredient> filtered = emiIngredients.stream().filter(KnownItems::isKnown).toList();
-
-      return filtered.isEmpty() ? List.of(EmiIngredient.of(Ingredient.EMPTY)) : filtered;
     }
-    return original.call(ingredientRecipe);
-  }
 }

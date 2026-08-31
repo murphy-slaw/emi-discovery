@@ -22,50 +22,52 @@ import java.util.List;
 
 @Mixin(SlotWidget.class)
 public class SlotWidgetMixin {
-  /** Wrap the drawSlotHighlight method so that we can override it in subclasses. */
-  @WrapMethod(method = "drawSlotHighlight", remap = false)
-  protected void overrideDrawSlotHighlight(
-      GuiGraphics draw, Bounds bounds, Operation<Void> original) {
-    original.call(draw, bounds);
-  }
-
-  @WrapOperation(
-      remap = false,
-      method = "drawStack",
-      at = @At(value = "INVOKE", target = "Ldev/emi/emi/api/stack/EmiIngredient;render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V"))
-  private void renderSlotStack(
-      EmiIngredient instance, GuiGraphics draw, int x, int y, float delta, Operation<Void> original) {
-    if (KnownItems.shouldBlackoutRecipes() && !KnownItems.isKnown(instance)) {
-      RenderSystem.setShaderColor(0.0f, 0.0f, 0.0f, 1.0f);
-      original.call(instance, draw, x, y, delta);
-      RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-
-      if (KnownItems.shouldShowQuestionMarkOverlay()) {
-        Minecraft client = Minecraft.getInstance();
-        String q = "?";
-        int textX = x + 16 - client.font.width(q);
-        int textY = y + 16 - client.font.lineHeight + 1;
-        draw.pose().pushPose();
-        draw.pose().translate(0, 0, 200);
-        draw.drawString(client.font, q, textX, textY, 0xFFE0E0E0, true);
-        draw.pose().popPose();
-      }
-    } else {
-      original.call(instance, draw, x, y, delta);
+    /**
+     * Wrap the drawSlotHighlight method so that we can override it in subclasses.
+     */
+    @WrapMethod(method = "drawSlotHighlight", remap = false)
+    protected void overrideDrawSlotHighlight(
+            GuiGraphics draw, Bounds bounds, Operation<Void> original) {
+        original.call(draw, bounds);
     }
-  }
 
-  @Inject(method = "getTooltip", at = @At("HEAD"), cancellable = true, remap = false)
-  private void obscureSlotTooltip(
-      int mouseX, int mouseY, CallbackInfoReturnable<List<ClientTooltipComponent>> cir) {
-    SlotWidget widget = (SlotWidget) (Object) this;
-    if (widget.getStack().isEmpty()) return;
-    if (KnownItems.shouldBlackoutRecipes()
-        && !KnownItems.isKnown(widget.getStack())
-        && KnownItems.shouldObscureTooltips()) {
-      List<ClientTooltipComponent> list = new ArrayList<>();
-      list.add(ClientTooltipComponent.create(Component.translatable("tooltip.emi_discovery.obscured").getVisualOrderText()));
-      cir.setReturnValue(list);
+    @WrapOperation(
+            remap = false,
+            method = "drawStack",
+            at = @At(value = "INVOKE", target = "Ldev/emi/emi/api/stack/EmiIngredient;render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V"))
+    private void renderSlotStack(
+            EmiIngredient instance, GuiGraphics draw, int x, int y, float delta, Operation<Void> original) {
+        if (KnownItems.shouldBlackoutRecipes() && !KnownItems.shouldIngredientDisplay(instance)) {
+            RenderSystem.setShaderColor(0.0f, 0.0f, 0.0f, 1.0f);
+            original.call(instance, draw, x, y, delta);
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+            if (KnownItems.shouldShowQuestionMarkOverlay()) {
+                Minecraft client = Minecraft.getInstance();
+                String q = "?";
+                int textX = x + 16 - client.font.width(q);
+                int textY = y + 16 - client.font.lineHeight + 1;
+                draw.pose().pushPose();
+                draw.pose().translate(0, 0, 200);
+                draw.drawString(client.font, q, textX, textY, 0xFFE0E0E0, true);
+                draw.pose().popPose();
+            }
+        } else {
+            original.call(instance, draw, x, y, delta);
+        }
     }
-  }
+
+    @Inject(method = "getTooltip", at = @At("HEAD"), cancellable = true, remap = false)
+    private void obscureSlotTooltip(
+            int mouseX, int mouseY, CallbackInfoReturnable<List<ClientTooltipComponent>> cir) {
+        SlotWidget widget = (SlotWidget) (Object) this;
+        if (widget.getStack().isEmpty()) return;
+        if (KnownItems.shouldBlackoutRecipes()
+                && !KnownItems.shouldIngredientDisplay(widget.getStack())
+                && KnownItems.shouldObscureTooltips()) {
+            List<ClientTooltipComponent> list = new ArrayList<>();
+            list.add(ClientTooltipComponent.create(Component.translatable("tooltip.emi_discovery.obscured").getVisualOrderText()));
+            cir.setReturnValue(list);
+        }
+    }
 }

@@ -1,68 +1,42 @@
 package net.funkpla.emi_discovery.mixin.remi;
 
+import com.evandev.remi.feature.stackgroup.EmiGroupStack;
 import com.evandev.remi.integration.emi.StackManager;
-import dev.emi.emi.api.stack.EmiIngredient;
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import dev.emi.emi.api.stack.EmiStack;
+import dev.emi.emi.config.EmiConfig;
 import net.funkpla.emi_discovery.KnownItems;
-import net.funkpla.emi_discovery.mixin.emixx.EMIxxStackManagerAccessor;
-import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.ArrayList;
 import java.util.List;
 
-@Mixin(StackManager.class)
+@Mixin(value = StackManager.class, remap = false)
 public class StackManagerMixin {
-
-    @Unique
-    @Nullable
-    private List<EmiStack> filteredStackCache = null;
-    @Unique
-    private int updateCount = 0;
-
     /**
-     * Get the internal list of displayed stacks from the StackManager and filter out stacks with no
-     * known items.
+     * Filter unknown items out of REMI's displayed-stack list.
      *
-     * @return the filtered list
+     * Was originally pretty clean... no longer the case, unfortunately.
      */
-    @Unique
-    private synchronized List<EmiStack> getFilteredStacks() {
-        if (filteredStackCache == null || updateCount != KnownItems.getUpdateCount()) {
-            filteredStackCache =
-                    ((EMIxxStackManagerAccessor) this).getInternalDisplayedStacks().stream().filter(KnownItems::shouldStackDisplay).toList();
-            updateCount = KnownItems.getUpdateCount();
+    @ModifyReturnValue(method = "buildDisplayedStacks", at = @At("RETURN"))
+    private static List<EmiStack> filterDisplayedStacks(List<EmiStack> original) {
+        if (!KnownItems.isModEnabled() || !KnownItems.shouldFilterIndex() || EmiConfig.editMode) {
+            return original;
         }
-        return this.filteredStackCache;
-    }
-
-    /**
-     * Replace the return value of StackManager.displayedStacks with a list filtered for known items.
-     *
-     * @param returnable to set the return value
-     */
-    @Inject(remap = false, method = "getDisplayedStacks$emixx_common", at = @At("HEAD"), cancellable = true)
-    private void filterStacks(CallbackInfoReturnable<List<EmiStack>> returnable) {
-        returnable.setReturnValue(getFilteredStacks());
-    }
-
-    /**
-     * Invalidate the cache when a stack is toggled.
-     */
-    @Inject(remap = false, method = "onStackInteractionDeprecated", at = @At("HEAD"))
-    private void clearFilteredCacheOnStack(EmiIngredient ingredient, CallbackInfo ci) {
-        filteredStackCache = null;
-    }
-
-    /**
-     * Invalidate the cache when displayed stack list is rebuilt
-     */
-    @Inject(remap = false, method = "buildDisplayedStacks", at = @At("HEAD"))
-    private void clearFilteredCacheDisplayed(CallbackInfo ci) {
-        filteredStackCache = null;
+        List<EmiStack> result = new ArrayList<>(original.size());
+        for (EmiStack stack : original) {
+            if (stack instanceof EmiGroupStack gs) {
+                var items = gs.getItems();
+                if (items.size() > 1) {
+                    result.add(gs);
+                } else if (items.size() == 1) {
+                    result.add(items.get(0).realStack);
+                }
+            } else if (KnownItems.shouldStackDisplay(stack)) {
+                result.add(stack);
+            }
+        }
+        return result;
     }
 }

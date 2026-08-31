@@ -11,12 +11,26 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LocalPlayer.class)
 public class LocalPlayerMixin {
+
+    @Unique
+    private static void emi_discovery$checkFluidState(FluidState fluidState) {
+        if (!fluidState.isEmpty()) {
+            Fluid fluid = fluidState.getType();
+            if (fluid instanceof FlowingFluid flowing) {
+                fluid = flowing.getSource();
+            }
+            if (fluid != Fluids.EMPTY) {
+                KnownItems.addKnown(fluid);
+            }
+        }
+    }
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void emi_discovery$onTickCheckFluids(CallbackInfo ci) {
@@ -33,36 +47,17 @@ public class LocalPlayerMixin {
         int minZ = Mth.floor(aabb.minZ);
         int maxZ = Mth.ceil(aabb.maxZ);
 
-        // I know this is a scary triple nested for loop, but this should only be like 12ish blocks
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int x = minX; x < maxX; x++) {
             for (int y = minY; y < maxY; y++) {
                 for (int z = minZ; z < maxZ; z++) {
                     pos.set(x, y, z);
-                    FluidState fluidState = level.getFluidState(pos);
-                    if (!fluidState.isEmpty()) {
-                        Fluid fluid = fluidState.getType();
-                        if (fluid instanceof FlowingFluid flowing) {
-                            fluid = flowing.getSource();
-                        }
-                        if (fluid != null && fluid != Fluids.EMPTY) {
-                            KnownItems.addKnown(fluid);
-                        }
-                    }
+                    emi_discovery$checkFluidState(level.getFluidState(pos));
                 }
             }
         }
 
         BlockPos eyePos = BlockPos.containing(player.getX(), player.getEyeY(), player.getZ());
-        FluidState eyeFluid = level.getFluidState(eyePos);
-        if (!eyeFluid.isEmpty()) {
-            Fluid fluid = eyeFluid.getType();
-            if (fluid instanceof FlowingFluid flowing) {
-                fluid = flowing.getSource();
-            }
-            if (fluid != null && fluid != Fluids.EMPTY) {
-                KnownItems.addKnown(fluid);
-            }
-        }
+        emi_discovery$checkFluidState(level.getFluidState(eyePos));
     }
 }

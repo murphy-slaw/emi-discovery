@@ -8,6 +8,7 @@
         "BucketItemAccessor",
         "BucketItemMixin",
         "BottleItemMixin",
+        "InventoryChangeTriggerMixin",
         "MinecraftServerStorageSourceAccessor"
     ],
     "client": [
@@ -17,6 +18,7 @@
         "MultiPlayerGameModeMixin",
         "emi.EmiApiMixin",
         "emi.EmiIngredientRecipeMixin",
+        "emi.EmiReloadManagerMixin",
         "emi.EmiScreenManagerMixin",
         "emi.EmiSidebarsMixin",
         "emi.EmiSmithingTrimRecipeMixin",

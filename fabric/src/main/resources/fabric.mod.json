@@ -31,7 +31,7 @@
         "minecraft": "${minecraft_version}",
         "java": ">=17",
         "emi": ">=1.1.22",
-        "emixx": ">=1.2.11",
+        "remi": ">=4.7.3",
         "cloth-config": "*"
     },
     "suggests": {

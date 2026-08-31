@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 public class AdvancementDiscoveryManager {
@@ -26,9 +27,9 @@ public class AdvancementDiscoveryManager {
     public static final Gson GSON = new GsonBuilder()
             .setLenient()
             .registerTypeAdapter(new TypeToken<Set<String>>() {
-            }.getType(), new StringOrSetDeserializer())
+            }.getType(), new StringOrCollectionDeserializer<>(HashSet::new))
             .registerTypeAdapter(new TypeToken<List<String>>() {
-            }.getType(), new StringOrListDeserializer())
+            }.getType(), new StringOrCollectionDeserializer<>(ArrayList::new))
             .create();
 
     private static volatile List<AdvancementDiscoveryRule> ALL_RULES = new ArrayList<>();
@@ -56,35 +57,23 @@ public class AdvancementDiscoveryManager {
         } catch (Exception ignored) {
         }
 
-        boolean foundFiles = false;
-
-        // check config/emi_discovery/advancements/
-        if (Files.exists(advConfigDir)) {
-            try (Stream<Path> paths = Files.walk(advConfigDir)) {
-                List<Path> files = paths.filter(Files::isRegularFile).filter(p -> p.toString().endsWith(".json")).toList();
-                if (!files.isEmpty()) {
-                    foundFiles = true;
-                    files.forEach(path -> parseFile(path, loadedRules));
-                }
+        boolean[] foundFiles = new boolean[]{false};
+        List<Path> searchDirs = List.of(advConfigDir, rootConfigDir);
+        for (Path dir : searchDirs) {
+            if (!Files.exists(dir)) continue;
+            try (Stream<Path> paths = (dir.equals(advConfigDir) ? Files.walk(dir) : Files.list(dir))) {
+                paths.filter(Files::isRegularFile)
+                        .filter(p -> p.toString().endsWith(".json"))
+                        .forEach(path -> {
+                            foundFiles[0] = true;
+                            parseFile(path, loadedRules);
+                        });
             } catch (Exception e) {
-                Constants.LOG.error("EMI Discovery: Failed to read advancement rules from {}", advConfigDir, e);
+                Constants.LOG.error("EMI Discovery: Failed to read advancement rules from {}", dir, e);
             }
         }
 
-        // also check config/emi_discovery/*.json (except world data)
-        if (Files.exists(rootConfigDir)) {
-            try (Stream<Path> paths = Files.list(rootConfigDir)) {
-                List<Path> files = paths.filter(Files::isRegularFile).filter(p -> p.toString().endsWith(".json")).toList();
-                if (!files.isEmpty()) {
-                    foundFiles = true;
-                    files.forEach(path -> parseFile(path, loadedRules));
-                }
-            } catch (Exception e) {
-                Constants.LOG.error("EMI Discovery: Failed to read rules from {}", rootConfigDir, e);
-            }
-        }
-
-        if (!foundFiles) {
+        if (!foundFiles[0]) {
             generateDefaultConfig(advConfigDir);
         }
 
@@ -227,33 +216,20 @@ public class AdvancementDiscoveryManager {
         }
     }
 
-    private static class StringOrSetDeserializer implements JsonDeserializer<Set<String>> {
-        @Override
-        public Set<String> deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            Set<String> set = new HashSet<>();
-            if (json.isJsonArray()) {
-                json.getAsJsonArray().forEach(e -> {
-                    if (e.isJsonPrimitive()) set.add(e.getAsString());
-                });
-            } else if (json.isJsonPrimitive()) {
-                set.add(json.getAsString());
-            }
-            return set;
-        }
-    }
+    private record StringOrCollectionDeserializer<T extends Collection<String>>(
+            Supplier<T> factory) implements JsonDeserializer<T> {
 
-    private static class StringOrListDeserializer implements JsonDeserializer<List<String>> {
         @Override
-        public List<String> deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-            List<String> list = new ArrayList<>();
+        public T deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            T collection = factory.get();
             if (json.isJsonArray()) {
                 json.getAsJsonArray().forEach(e -> {
-                    if (e.isJsonPrimitive()) list.add(e.getAsString());
+                    if (e.isJsonPrimitive()) collection.add(e.getAsString());
                 });
             } else if (json.isJsonPrimitive()) {
-                list.add(json.getAsString());
+                collection.add(json.getAsString());
             }
-            return list;
+            return collection;
         }
     }
 }

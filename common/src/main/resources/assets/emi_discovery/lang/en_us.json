@@ -37,6 +37,10 @@
     "text.autoconfig.emi_discovery.option.displayWithUnknownWorkstation.@Tooltip[0]": "When enabled, recipes show even if you have not yet discovered the required workstation.",
     "text.autoconfig.emi_discovery.option.displayWithUnknownWorkstation.@Tooltip[1]": "When disabled, recipes remain hidden until you discover the station used to craft them.",
 
+    "text.autoconfig.emi_discovery.option.exemptInventoryCrafting": "Exempt 2x2 Inventory Crafting",
+    "text.autoconfig.emi_discovery.option.exemptInventoryCrafting.@Tooltip[0]": "When enabled, 2x2 crafting recipes (e.g., Planks, Crafting Table) do not require",
+    "text.autoconfig.emi_discovery.option.exemptInventoryCrafting.@Tooltip[1]": "the Crafting Table workstation to be discovered to be craftable or viewed.",
+
     "text.autoconfig.emi_discovery.option.requireCatalystsKnown": "Require Known Catalysts for Recipes",
     "text.autoconfig.emi_discovery.option.requireCatalystsKnown.@Tooltip[0]": "When enabled, recipes requiring catalysts (such as smithing templates or brewing fuel)",
     "text.autoconfig.emi_discovery.option.requireCatalystsKnown.@Tooltip[1]": "will require that catalyst to be discovered before revealing the recipe.",
@@ -63,5 +67,8 @@
 
     "text.autoconfig.emi_discovery.option.enableAdvancementDiscovery": "Enable Advancement Discovery",
     "text.autoconfig.emi_discovery.option.enableAdvancementDiscovery.@Tooltip[0]": "When enabled, completing advancements unlocks items and tags",
-    "text.autoconfig.emi_discovery.option.enableAdvancementDiscovery.@Tooltip[1]": "configured in advancement rule files (config/emi_discovery/advancements/)."
+    "text.autoconfig.emi_discovery.option.enableAdvancementDiscovery.@Tooltip[1]": "configured in advancement rule files (config/emi_discovery/advancements/).",
+
+    "commands.discovery.notFound": "Unknown item, fluid, or effect: %s",
+    "commands.discovery.tagNotFound": "Tag not found or empty: #%s"
 }

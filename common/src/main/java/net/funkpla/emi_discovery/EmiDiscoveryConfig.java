@@ -36,7 +36,11 @@ public class EmiDiscoveryConfig implements ConfigData {
     // Recipe Screen & Filtering
     @ConfigEntry.Category("recipes")
     @ConfigEntry.Gui.Tooltip(count = 2)
-    public boolean displayWithUnknownWorkstation = true;
+    public boolean displayWithUnknownWorkstation = false;
+
+    @ConfigEntry.Category("recipes")
+    @ConfigEntry.Gui.Tooltip(count = 2)
+    public boolean exemptInventoryCrafting = true;
 
     @ConfigEntry.Category("recipes")
     @ConfigEntry.Gui.Tooltip(count = 2)
