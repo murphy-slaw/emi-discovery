@@ -29,10 +29,11 @@ public class TagTooltipComponentMixin {
 
     @ModifyVariable(method = "<init>", at = @At("HEAD"), argsOnly = true, remap = false)
     private static List<EmiStack> filterStacks(List<EmiStack> stacks) {
-        if (!KnownItems.isModEnabled() || KnownItems.shouldBlackoutRecipes() || stacks == null) {
-            return stacks;
+        if (stacks == null) return null;
+        if (!KnownItems.isModEnabled() || KnownItems.shouldBlackoutRecipes()) {
+            return stacks.stream().filter(s -> !s.isEmpty()).toList();
         }
-        return stacks.stream().filter(KnownItems::shouldStackDisplay).toList();
+        return stacks.stream().filter(s -> !s.isEmpty() && KnownItems.shouldStackDisplay(s)).toList();
     }
 
     @Inject(method = "getHeight", at = @At("HEAD"), cancellable = true, remap = false)

@@ -28,10 +28,11 @@ public class IngredientTooltipComponentMixin {
 
     @ModifyVariable(method = "<init>", at = @At("HEAD"), argsOnly = true, remap = false)
     private static List<? extends EmiIngredient> filterIngredients(List<? extends EmiIngredient> ingredients) {
-        if (!KnownItems.isModEnabled() || KnownItems.shouldBlackoutRecipes() || ingredients == null) {
-            return ingredients;
+        if (ingredients == null) return null;
+        if (!KnownItems.isModEnabled() || KnownItems.shouldBlackoutRecipes()) {
+            return ingredients.stream().filter(s -> !s.isEmpty()).toList();
         }
-        return ingredients.stream().filter(KnownItems::shouldIngredientDisplay).toList();
+        return ingredients.stream().filter(s -> !s.isEmpty() && KnownItems.shouldIngredientDisplay(s)).toList();
     }
 
     @Inject(method = "getHeight", at = @At("HEAD"), cancellable = true, remap = false)
