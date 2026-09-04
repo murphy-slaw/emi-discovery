@@ -17,7 +17,7 @@ public class ListEmiIngredientMixin {
 
     @WrapOperation(
             remap = false,
-            method = {"render", "getTooltip"},
+            method = "render",
             at =
             @At(
                     value = "FIELD",
@@ -25,8 +25,13 @@ public class ListEmiIngredientMixin {
                     opcode = Opcodes.GETFIELD))
     private List<? extends EmiIngredient> filterIngredients(
             ListEmiIngredient listEmiIngredient, Operation<List<? extends EmiIngredient>> original) {
-        return listEmiIngredient.getIngredients().stream()
+        List<? extends EmiIngredient> all = original.call(listEmiIngredient);
+        if (all == null || all.isEmpty()) {
+            return all;
+        }
+        List<? extends EmiIngredient> known = all.stream()
                 .filter(KnownItems::shouldIngredientDisplay)
                 .toList();
+        return known.isEmpty() ? all : known;
     }
 }

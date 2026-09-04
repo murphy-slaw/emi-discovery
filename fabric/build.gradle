@@ -1,7 +1,14 @@
+import java.nio.charset.StandardCharsets
+
 plugins {
     id 'multiloader-loader'
     id 'fabric-loom'
 }
+
+static String offlinePlayerUuid(String username) {
+    return UUID.nameUUIDFromBytes(("OfflinePlayer:" + username).getBytes(StandardCharsets.UTF_8)).toString()
+}
+
 repositories {
     maven { url "https://maven.shedaniel.me/" }
     maven { url "https://maven.terraformersmc.com/releases/" }
@@ -15,6 +22,7 @@ repositories {
         url = uri('https://maven.isxander.dev/releases')
     }
 }
+
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
     mappings loom.layered {
@@ -40,22 +48,19 @@ loom {
         accessWidenerPath.set(accessWidenerFile)
     }
 
-    mixin {
-        defaultRefmapName.set("${mod_id}.refmap.json")
-    }
     runs {
         client {
             client()
             setConfigName("Fabric Client")
             ideConfigGenerated(true)
-            runDir("run")
-            programArgs(["--username", "murphy_slaw", "--uuid", "f0726398-654d-473c-af31-b0a210214fd4"])
+            runDir("runs/client")
+            programArgs(["--username", "murphy_slaw", "--uuid", offlinePlayerUuid("murphy_slaw")])
         }
         server {
             server()
             setConfigName("Fabric Server")
             ideConfigGenerated(true)
-            runDir("run")
+            runDir("runs/server")
         }
     }
 }
