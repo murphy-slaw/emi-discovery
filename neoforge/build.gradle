@@ -44,6 +44,7 @@ dependencies {
     api("me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}")
     implementation "dev.emi:emi-neoforge:${emi_version}"
     implementation "maven.modrinth:reliable-emi:${remi_version}-${minecraft_version}-neoforge"
+    runtimeOnly "maven.modrinth:yacl:${yacl_version}+${minecraft_version}-neoforge"
 }
 
 publishMods {

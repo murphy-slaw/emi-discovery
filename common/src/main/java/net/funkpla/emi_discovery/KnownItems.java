@@ -18,10 +18,12 @@ import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.recipe.EmiRecipeCategory;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
+import dev.emi.emi.recipe.EmiTagRecipe;
 import dev.emi.emi.registry.EmiRecipes;
 import dev.emi.emi.screen.EmiScreenManager;
 import net.funkpla.emi_discovery.mixin.BucketItemAccessor;
 import net.funkpla.emi_discovery.mixin.MinecraftServerStorageSourceAccessor;
+import net.funkpla.emi_discovery.mixin.emi.accessor.EmiTagRecipeAccessor;
 import net.funkpla.emi_discovery.platform.Services;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ServerData;
@@ -640,6 +642,11 @@ public class KnownItems {
         if (recipe == null) return true;
         if (!displayWithUnknownWorkstation() && !isWorkstationKnownForRecipe(recipe)) return false;
         if (!catalystsKnown(recipe)) return false;
+        if (recipe instanceof EmiTagRecipe tagRecipe) {
+            List<EmiStack> stacks = ((EmiTagRecipeAccessor) tagRecipe).getStacks();
+            if (stacks == null || stacks.isEmpty()) return false;
+            return stacks.stream().anyMatch(KnownItems::shouldStackDisplay);
+        }
         List<EmiIngredient> inputs = recipe.getInputs();
         if (inputs == null || inputs.isEmpty()) return true;
         for (EmiIngredient input : inputs) {

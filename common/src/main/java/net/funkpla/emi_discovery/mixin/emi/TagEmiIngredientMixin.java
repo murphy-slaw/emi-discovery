@@ -18,7 +18,7 @@ public class TagEmiIngredientMixin {
 
     @WrapOperation(
             remap = false,
-            method = {"render", "getTooltip"},
+            method = "render",
             at =
             @At(
                     value = "FIELD",
@@ -26,7 +26,14 @@ public class TagEmiIngredientMixin {
                     opcode = Opcodes.GETFIELD))
     private List<EmiStack> filterStacks(
             TagEmiIngredient tagEmiIngredient, Operation<List<EmiStack>> original) {
-        return ((TagEmiIngredientAccessor) tagEmiIngredient)
-                .getStacks().stream().filter(KnownItems::shouldStackDisplay).toList();
+        if (!KnownItems.isModEnabled()) {
+            return original.call(tagEmiIngredient);
+        }
+        List<EmiStack> allStacks = ((TagEmiIngredientAccessor) tagEmiIngredient).getStacks();
+        if (allStacks == null || allStacks.isEmpty()) {
+            return original.call(tagEmiIngredient);
+        }
+        List<EmiStack> known = allStacks.stream().filter(KnownItems::shouldStackDisplay).toList();
+        return known.isEmpty() ? allStacks : known;
     }
 }

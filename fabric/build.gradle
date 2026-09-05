@@ -25,6 +25,7 @@ dependencies {
     modApi("com.terraformersmc:modmenu:${modmenu_version}")
     modImplementation "dev.emi:emi-fabric:${emi_version}"
     modImplementation "maven.modrinth:reliable-emi:${remi_version}-${minecraft_version}-fabric"
+    modRuntimeOnly "maven.modrinth:yacl:${yacl_version}+${minecraft_version}-fabric"
 }
 
 loom {

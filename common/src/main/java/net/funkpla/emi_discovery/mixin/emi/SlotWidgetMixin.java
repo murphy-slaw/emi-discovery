@@ -38,8 +38,10 @@ public class SlotWidgetMixin {
     private void renderSlotStack(
             EmiIngredient instance, GuiGraphics draw, int x, int y, float delta, Operation<Void> original) {
         if (KnownItems.shouldBlackoutRecipes() && !KnownItems.shouldIngredientDisplay(instance)) {
+            draw.flush();
             RenderSystem.setShaderColor(0.0f, 0.0f, 0.0f, 1.0f);
             original.call(instance, draw, x, y, delta);
+            draw.flush();
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
             if (KnownItems.shouldShowQuestionMarkOverlay()) {
@@ -68,6 +70,8 @@ public class SlotWidgetMixin {
             List<ClientTooltipComponent> list = new ArrayList<>();
             list.add(ClientTooltipComponent.create(Component.translatable("tooltip.emi_discovery.obscured").getVisualOrderText()));
             cir.setReturnValue(list);
+        } else if (!KnownItems.shouldBlackoutRecipes() && !KnownItems.shouldIngredientDisplay(widget.getStack())) {
+            cir.setReturnValue(List.of());
         }
     }
 }
