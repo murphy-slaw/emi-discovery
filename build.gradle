@@ -23,26 +23,36 @@ publishMods {
             .withEmptySections(false),
             Changelog.OutputType.MARKDOWN
     )
-/*
-    curseforge {
-        projectId = ""
-        projectSlug = "nether-tweaks" // Required for discord webhook
+    def cfOptions = curseforgeOptions{
+        projectId = "1469248"
+        projectSlug = "emidiscovery" // Required for discord webhook
         accessToken = providers.environmentVariable("CURSEFORGE_TOKEN")
-        minecraftVersions.add(minecraft_version)
+        minecraftVersions.add(project.minecraft_version)
         javaVersions.add(JavaVersion.VERSION_21)
         clientRequired = true
         serverRequired = true
         requires("cloth-config")
-        optional("modmenu")
         optional("reliable-emi")
     }
- */
     def mrOptions = modrinthOptions{
-        projectId = "tE1u6dj1"
+        projectId = "WO3G3DRj"
         accessToken = providers.environmentVariable("MODRINTH_TOKEN")
         minecraftVersions.add(project.minecraft_version)
         requires("cloth-config")
         optional("reliable-emi")
+    }
+
+    curseforge("curseforgeFabric"){
+        from cfOptions
+        file project(":fabric")
+        modLoaders.add("fabric")
+        optional("modmenu")
+    }
+
+    curseforge("curseforgeNeoForge"){
+        from cfOptions
+        file project(":neoforge")
+        modLoaders.add("neoforge")
     }
 
     modrinth("modrinthFabric") {
