@@ -42,6 +42,8 @@ dependencies {
     modImplementation "com.moulberry:mixinconstraints:${mixinconstraints_version}"
     include "com.moulberry:mixinconstraints:${mixinconstraints_version}"
     modRuntimeOnly "dev.isxander:yet-another-config-lib:${yacl_version}+${minecraft_version}-fabric"
+    modRuntimeOnly "maven.modrinth:705gWllI:i1zyA9dn"
+
 }
 
 loom {
