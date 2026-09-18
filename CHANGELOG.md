@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 Thanks to evanbones for his generous work on this update for Minecraft 1.21.1.
 
 ### Changed
-- Now for Minecraft 1.21.1 
+- Now for Minecraft 1.21.1 on Fabric and Neoforge
 - Updated to work with the 1.21.1 version of Reliable EMI (REMI)
 
 ### Added
