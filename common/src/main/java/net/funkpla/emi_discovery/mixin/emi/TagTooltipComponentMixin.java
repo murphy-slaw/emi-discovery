@@ -36,7 +36,8 @@ public class TagTooltipComponentMixin {
         return stacks.stream().filter(s -> !s.isEmpty() && KnownItems.shouldStackDisplay(s)).toList();
     }
 
-    @Inject(method = "getHeight", at = @At("HEAD"), cancellable = true, remap = false)
+    // thank you forge, very cool
+    @Inject(method = {"getHeight", "m_142103_", "method_32661"}, at = @At("HEAD"), cancellable = true, remap = false)
     private void fixEmptyHeight(CallbackInfoReturnable<Integer> cir) {
         if (this.stacks == null || this.stacks.isEmpty()) {
             cir.setReturnValue(0);

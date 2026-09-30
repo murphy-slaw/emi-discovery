@@ -73,7 +73,10 @@ dependencies {
     implementation(jarJar("io.github.llamalad7:mixinextras-forge:0.5.3"))
     compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.5.3"))
     modImplementation "dev.emi:emi-forge:${emi_version}"
-    modImplementation "maven.modrinth:reliable-emi:${emixx_version}-forge"
+    modImplementation "maven.modrinth:reliable-emi:${remi_version}-forge"
+    jarJar(implementation("com.moulberry:mixinconstraints:${mixinconstraints_version}") {
+        exclude group: "org.slf4j", module: "slf4j-api"
+    })
     modRuntimeOnly "dev.isxander:yet-another-config-lib:${yacl_version}+${minecraft_version}-forge"
 }
 

@@ -39,7 +39,8 @@ dependencies {
     }
     compileOnly "dev.emi:emi-xplat-mojmap:${emi_version}"
     compileOnly "org.ow2.asm:asm:9.7.1"
-    modCompileOnly "maven.modrinth:reliable-emi:${emixx_version}-forge"
+    modCompileOnly "maven.modrinth:reliable-emi:${remi_version}-forge"
+    compileOnly "com.moulberry:mixinconstraints:${mixinconstraints_version}"
 }
 
 configurations {

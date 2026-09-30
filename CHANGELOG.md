@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] 2026-09-17
+
+### Changed
+- Backported 1.21.1 updates to 1.20 Fabric and Forge
+- Updated to work with the backported version of Reliable EMI (REMI)
+- REMI is no longer a hard dependency.
+
+### Added
+- A large number of new configuration options, editable in-game
+- "Blackout mode": renders undiscovered items as black silhouettes in recipes instead of hiding the recipe completely
+- Advancement Discovery Rules, which allow you to specify unlocks to grant for advancements, using JSON
+
 ## [1.1.9] 2026-07-15
 
 ### Added

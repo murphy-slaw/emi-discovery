@@ -31,9 +31,9 @@ ordering = "NONE"
 side = "BOTH"
 [[dependencies.${mod_id}]]
 modId = "remi"
-mandatory = true
+mandatory = false
 versionRange = "[4.7.3,)"
-ordering = "NONE"
+ordering = "AFTER"
 side = "CLIENT"
 [[dependencies.${mod_id}]]
 modId = "cloth_config"
