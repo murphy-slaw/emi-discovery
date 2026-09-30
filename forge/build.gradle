@@ -70,7 +70,7 @@ dependencies {
     compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.5.3"))
     modImplementation "dev.emi:emi-forge:${emi_version}"
     implementation "thedarkcolour:kotlinforforge:${kotlin_for_forge_version}"
-    modImplementation "maven.modrinth:reliable-emi:IjNM5KeY"
+    modImplementation "maven.modrinth:reliable-emi:${emixx_version}-forge"
 }
 
 jar {
