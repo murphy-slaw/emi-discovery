@@ -30,9 +30,9 @@ versionRange = "[1.1.22,)"
 ordering = "NONE"
 side = "BOTH"
 [[dependencies.${mod_id}]]
-modId = "emixx"
+modId = "remi"
 mandatory = true
-versionRange = "[1.2.11,)"
+versionRange = "[4.7.3,)"
 ordering = "NONE"
 side = "CLIENT"
 [[dependencies.${mod_id}]]
