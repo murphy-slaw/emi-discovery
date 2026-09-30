@@ -3,6 +3,7 @@ package net.funkpla.emi_discovery.mixin.remi;
 import com.evandev.remi.feature.stackgroup.EmiGroupStack;
 import com.evandev.remi.integration.emi.StackManager;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
+import com.moulberry.mixinconstraints.annotations.IfModLoaded;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.config.EmiConfig;
 import net.funkpla.emi_discovery.KnownItems;
@@ -12,11 +13,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import java.util.ArrayList;
 import java.util.List;
 
+@IfModLoaded("remi")
 @Mixin(value = StackManager.class, remap = false)
 public class StackManagerMixin {
     /**
      * Filter unknown items out of REMI's displayed-stack list.
-     *
+     * <p>
      * Was originally pretty clean... no longer the case, unfortunately.
      */
     @ModifyReturnValue(method = "buildDisplayedStacks", at = @At("RETURN"))

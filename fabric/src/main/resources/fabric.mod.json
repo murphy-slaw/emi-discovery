@@ -31,7 +31,13 @@
         "minecraft": "${minecraft_version}",
         "java": ">=21",
         "emi": ">=1.1.22",
-        "remi": ">=4.5.2"
+        "cloth-config": "*"
+    },
+    "breaks": {
+        "remi": "<4.7.3"
+    },
+    "suggests": {
+        "remi": ">=4.7.3"
     }
 }
   

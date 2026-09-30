@@ -1,8 +1,6 @@
 package net.funkpla.emi_discovery;
 
 import com.evandev.remi.feature.creativemodetab.CreativeModeTabManager;
-import com.evandev.remi.feature.stackgroup.EmiGroupStack;
-import com.evandev.remi.feature.stackgroup.GroupedEmiStack;
 import com.evandev.remi.integration.emi.StackManager;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -22,6 +20,7 @@ import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.recipe.EmiTagRecipe;
 import dev.emi.emi.registry.EmiRecipes;
 import dev.emi.emi.screen.EmiScreenManager;
+import net.funkpla.emi_discovery.compat.RemiCompat;
 import net.funkpla.emi_discovery.mixin.BucketItemAccessor;
 import net.funkpla.emi_discovery.mixin.MinecraftServerStorageSourceAccessor;
 import net.funkpla.emi_discovery.mixin.emi.accessor.EmiTagRecipeAccessor;
@@ -63,6 +62,7 @@ public class KnownItems {
             Services.PLATFORM.getGameDir().resolve(Path.of("moddata", "emi_discovery"));
 
     private static final AtomicInteger UPDATE_COUNT = new AtomicInteger();
+    private static final boolean REMI_LOADED = Services.PLATFORM.isModLoaded("remi");
     private static final Gson gson = new Gson();
     private static final ExecutorService SAVE_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "EmiDiscovery-SaveThread");
@@ -89,9 +89,8 @@ public class KnownItems {
     public static void invalidateCache() {
         stackDisplayCache.invalidateAll();
         UPDATE_COUNT.getAndIncrement();
-        try {
-            EmiGroupStack.onStackFilterChanged();
-        } catch (Throwable ignored) {
+        if (REMI_LOADED) {
+            RemiCompat.onFilterChanged();
         }
         try {
             if (EmiScreenManager.search != null) {
@@ -337,11 +336,6 @@ public class KnownItems {
         invalidateCache();
     }
 
-    public static boolean isKnown(Item item) {
-        if (!isModEnabled()) return true;
-        return item != null && knownItems.contains(item);
-    }
-
     /**
      * Does the item represented by the given stack exist in the known set? Also returns true for
      * empty stacks so empty slots in the recipe don't count.
@@ -379,8 +373,12 @@ public class KnownItems {
     public static boolean isKnown(EmiStack stack) {
         if (stack == null || stack.isEmpty()) return true;
         if (!isModEnabled()) return true;
-        if (stack instanceof EmiGroupStack groupStack) return isKnown(groupStack);
-        if (stack instanceof GroupedEmiStack<?> groupedStack) return isKnown(groupedStack.realStack);
+        if (REMI_LOADED) {
+            List<EmiStack> group = RemiCompat.getGroupContents(stack);
+            if (group != null) return isAnyKnown(group);
+            EmiStack real = RemiCompat.unwrap(stack);
+            if (real != stack) return isKnown(real);
+        }
 
         Object key = stack.getKey();
         if (key instanceof Item item) {
@@ -432,15 +430,11 @@ public class KnownItems {
     }
 
     /**
-     * This method takes an EmiGroupStack and returns true if any of the items associated
-     * with any of the GroupedEmiStacks are known.
+     * Returns true if any of the real stacks in a REMI group are known.
      */
-    public static boolean isKnown(EmiGroupStack groupStack) {
-        if (groupStack == null) return false;
-        var items = groupStack.getItems();
-        if (items.isEmpty()) return false;
-        for (GroupedEmiStack<EmiStack> item : items) {
-            if (isKnown(item.realStack)) {
+    private static boolean isAnyKnown(List<EmiStack> groupContents) {
+        for (EmiStack stack : groupContents) {
+            if (isKnown(stack)) {
                 return true;
             }
         }
@@ -502,7 +496,7 @@ public class KnownItems {
 
         for (ItemStack stack : displayItems) {
             if (stack == null || stack.isEmpty()) continue;
-            if (isKnown(stack.getItem())) {
+            if (isKnown(stack)) {
                 return true;
             }
         }
@@ -567,8 +561,12 @@ public class KnownItems {
      */
     public static boolean isCraftable(EmiStack emiStack) {
         if (emiStack == null || emiStack.isEmpty()) return false;
-        if (emiStack instanceof EmiGroupStack groupStack) return isCraftable(groupStack);
-        if (emiStack instanceof GroupedEmiStack<?> groupedStack) return isCraftable(groupedStack.realStack);
+        if (REMI_LOADED) {
+            List<EmiStack> group = RemiCompat.getGroupContents(emiStack);
+            if (group != null) return isAnyCraftable(group);
+            EmiStack real = RemiCompat.unwrap(emiStack);
+            if (real != emiStack) return isCraftable(real);
+        }
         if (EmiRecipes.manager == null) return false;
         try {
             List<EmiRecipe> recipes = EmiRecipes.manager.getRecipesByOutput(emiStack);
@@ -607,14 +605,11 @@ public class KnownItems {
     }
 
     /**
-     * For EmiGroupStacks, we call the stack craftable if any of the real stacks are craftable.
+     * For REMI groups, we call the stack craftable if any of the real stacks are craftable.
      */
-    public static boolean isCraftable(EmiGroupStack groupStack) {
-        if (groupStack == null) return false;
-        var items = groupStack.getItems();
-        if (items.isEmpty()) return false;
-        for (GroupedEmiStack<EmiStack> item : items) {
-            if (isCraftable(item.realStack)) {
+    private static boolean isAnyCraftable(List<EmiStack> groupContents) {
+        for (EmiStack stack : groupContents) {
+            if (isCraftable(stack)) {
                 return true;
             }
         }
@@ -638,8 +633,9 @@ public class KnownItems {
         if (!shouldFilterIndex()) {
             return true;
         }
-        if (emiStack instanceof EmiGroupStack groupStack) {
-            if (groupStack.getItems().isEmpty()) {
+        if (REMI_LOADED) {
+            List<EmiStack> group = RemiCompat.getGroupContents(emiStack);
+            if (group != null && group.isEmpty()) {
                 return false;
             }
         }

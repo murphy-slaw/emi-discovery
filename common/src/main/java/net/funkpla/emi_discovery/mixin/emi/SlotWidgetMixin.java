@@ -34,7 +34,7 @@ public class SlotWidgetMixin {
     @WrapOperation(
             remap = false,
             method = "drawStack",
-            at = @At(value = "INVOKE", target = "Ldev/emi/emi/api/stack/EmiIngredient;render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V"))
+            at = @At(value = "INVOKE", remap = true, target = "Ldev/emi/emi/api/stack/EmiIngredient;render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V"))
     private void renderSlotStack(
             EmiIngredient instance, GuiGraphics draw, int x, int y, float delta, Operation<Void> original) {
         if (KnownItems.shouldBlackoutRecipes() && !KnownItems.shouldIngredientDisplay(instance)) {

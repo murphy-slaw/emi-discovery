@@ -28,6 +28,8 @@ dependencies {
 
     compileOnly "me.shedaniel.cloth:cloth-config-neoforge:${cloth_config_version}"
     compileOnly "dev.emi:emi-xplat-mojmap:${emi_version}"
+    compileOnly "org.ow2.asm:asm:9.7.1"
+    compileOnly "com.moulberry:mixinconstraints:${mixinconstraints_version}"
     compileOnly "maven.modrinth:reliable-emi:${remi_version}-${minecraft_version}-neoforge"
 }
 

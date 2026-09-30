@@ -3,11 +3,12 @@
     "minVersion": "0.8",
     "package": "net.funkpla.emi_discovery.mixin",
     "refmap": "${mod_id}.refmap.json",
+    "plugin": "com.moulberry.mixinconstraints.ConstraintsMixinPlugin",
     "compatibilityLevel": "JAVA_18",
     "mixins": [
+        "BottleItemMixin",
         "BucketItemAccessor",
         "BucketItemMixin",
-        "BottleItemMixin",
         "InventoryChangeTriggerMixin",
         "MinecraftServerStorageSourceAccessor"
     ],

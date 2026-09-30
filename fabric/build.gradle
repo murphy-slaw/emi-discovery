@@ -32,6 +32,8 @@ dependencies {
     modApi("com.terraformersmc:modmenu:${modmenu_version}")
     modImplementation "dev.emi:emi-fabric:${emi_version}"
     modImplementation "maven.modrinth:reliable-emi:${remi_version}-${minecraft_version}-fabric"
+    modImplementation "com.moulberry:mixinconstraints:${mixinconstraints_version}"
+    include "com.moulberry:mixinconstraints:${mixinconstraints_version}"
     modRuntimeOnly "dev.isxander:yet-another-config-lib:${yacl_version}+${minecraft_version}-fabric"
 }
 
@@ -39,6 +41,10 @@ loom {
     var accessWidenerFile = file("src/main/resources/${mod_id}.accesswidener")
     if (accessWidenerFile.exists()) {
         accessWidenerPath.set(accessWidenerFile)
+    }
+
+    mixin {
+        defaultRefmapName.set("${mod_id}.refmap.json")
     }
 
     runs {

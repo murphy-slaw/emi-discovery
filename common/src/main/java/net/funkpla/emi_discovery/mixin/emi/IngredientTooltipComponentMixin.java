@@ -35,7 +35,8 @@ public class IngredientTooltipComponentMixin {
         return ingredients.stream().filter(s -> !s.isEmpty() && KnownItems.shouldIngredientDisplay(s)).toList();
     }
 
-    @Inject(method = "getHeight", at = @At("HEAD"), cancellable = true, remap = false)
+    // again, thank you forge, very cool
+    @Inject(method = {"getHeight", "m_142103_", "method_32661"}, at = @At("HEAD"), cancellable = true, remap = false)
     private void fixEmptyHeight(CallbackInfoReturnable<Integer> cir) {
         if (this.ingredients == null || this.ingredients.isEmpty()) {
             cir.setReturnValue(0);

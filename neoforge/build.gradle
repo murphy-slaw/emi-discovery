@@ -45,6 +45,9 @@ dependencies {
     implementation "dev.emi:emi-neoforge:${emi_version}"
     implementation "maven.modrinth:reliable-emi:${remi_version}-${minecraft_version}-neoforge"
     runtimeOnly "maven.modrinth:yacl:${yacl_version}+${minecraft_version}-neoforge"
+    jarJar(implementation("com.moulberry:mixinconstraints:${mixinconstraints_version}") {
+        exclude group: "org.slf4j", module: "slf4j-api"
+    })
 }
 
 publishMods {
