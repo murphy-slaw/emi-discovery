@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] 2026-09-18
+
+### Added
+- Added config to hide REMI tabs when nothing in them has been discovered (disabled by default)
+
 ## [2.0.0] 2026-09-17
 
 Thanks to evanbones for his generous work on this update for Minecraft 1.21.1.
@@ -15,7 +20,7 @@ Thanks to evanbones for his generous work on this update for Minecraft 1.21.1.
 
 ### Added
 - A large number of new configuration options, editable in-game
-- "Blackout mode": renders undiscovered items as black silhouettes in recipes instead of hiding the recipe completely 
+- "Blackout mode": renders undiscovered items as black silhouettes in recipes instead of hiding the recipe completely
 - Advancement Discovery Rules, which allow you to specify unlocks to grant for advancements, using JSON
 
 ## [1.1.9] 2026-07-15

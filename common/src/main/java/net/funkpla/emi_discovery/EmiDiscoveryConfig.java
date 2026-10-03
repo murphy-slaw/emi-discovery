@@ -33,6 +33,10 @@ public class EmiDiscoveryConfig implements ConfigData {
     @ConfigEntry.Gui.Tooltip(count = 2)
     public boolean requireWorkstationForCraftable = true;
 
+    @ConfigEntry.Category("index")
+    @ConfigEntry.Gui.Tooltip(count = 2)
+    public boolean hideEmptyRemiTabs = false;
+
     // Recipe Screen & Filtering
     @ConfigEntry.Category("recipes")
     @ConfigEntry.Gui.Tooltip(count = 2)

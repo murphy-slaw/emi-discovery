@@ -33,6 +33,10 @@
     "text.autoconfig.emi_discovery.option.requireWorkstationForCraftable.@Tooltip[0]": "When enabled, craftable items only appear in the index if you have also",
     "text.autoconfig.emi_discovery.option.requireWorkstationForCraftable.@Tooltip[1]": "discovered the required workstation (e.g., Crafting Table, Furnace, Loom).",
 
+    "text.autoconfig.emi_discovery.option.hideEmptyRemiTabs": "Hide Empty Reliable EMI Tabs",
+    "text.autoconfig.emi_discovery.option.hideEmptyRemiTabs.@Tooltip[0]": "When enabled, Reliable EMI tabs containing no discovered items are hidden.",
+    "text.autoconfig.emi_discovery.option.hideEmptyRemiTabs.@Tooltip[1]": "Tabs reappear once at least one item within them has been discovered.",
+
     "text.autoconfig.emi_discovery.option.displayWithUnknownWorkstation": "Display Recipes for Undiscovered Workstations",
     "text.autoconfig.emi_discovery.option.displayWithUnknownWorkstation.@Tooltip[0]": "When enabled, recipes show even if you have not yet discovered the required workstation.",
     "text.autoconfig.emi_discovery.option.displayWithUnknownWorkstation.@Tooltip[1]": "When disabled, recipes remain hidden until you discover the station used to craft them.",
