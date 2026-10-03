@@ -17,10 +17,12 @@ public class ItemEmiStackMixin {
      * Suppress original numeric amount rendering when blackout is enabled and stack is undiscovered
      */
     @WrapOperation(
+            remap = false,
             method = "render",
             at =
             @At(
                     value = "INVOKE",
+                    remap = true,
                     target = "Ldev/emi/emi/EmiRenderHelper;renderAmount(Ldev/emi/emi/runtime/EmiDrawContext;IILnet/minecraft/network/chat/Component;)V"))
     private void suppressRenderAmount(
             EmiDrawContext context, int x, int y, Component amount, Operation<Void> original) {
