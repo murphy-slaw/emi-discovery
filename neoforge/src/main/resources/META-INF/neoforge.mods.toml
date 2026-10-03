@@ -38,7 +38,7 @@ side = "CLIENT"
 
 [[dependencies.${mod_id}]]
 modId = "remi"
-type = "required"
+type = "optional"
 versionRange = "[4.5.0,)"
 ordering = "NONE"
 side = "CLIENT"
