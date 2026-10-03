@@ -1,5 +1,7 @@
 package net.funkpla.emi_discovery;
 
+import com.evandev.remi.feature.creativemodetab.CreativeModeTabManager;
+import com.evandev.remi.integration.emi.StackManager;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -30,10 +32,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.item.BucketItem;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
+import net.minecraft.world.item.*;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import org.apache.commons.io.IOUtils;
@@ -81,6 +80,8 @@ public class KnownItems {
                                 }
                             });
 
+    private static boolean wasHidingRemiTabs = false;
+
     public static int getUpdateCount() {
         return UPDATE_COUNT.get();
     }
@@ -94,6 +95,29 @@ public class KnownItems {
         try {
             if (EmiScreenManager.search != null) {
                 EmiScreenManager.search.update();
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            if (StackManager.sourceStacks != null && !StackManager.sourceStacks.isEmpty()) {
+                StackManager.buildStacks(StackManager.sourceStacks);
+                StackManager.repopulateIndexPanelsIfDirty();
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            if (shouldHideEmptyRemiTabs() || wasHidingRemiTabs) {
+                wasHidingRemiTabs = shouldHideEmptyRemiTabs();
+                Minecraft mc = Minecraft.getInstance();
+                if (mc.isSameThread()) {
+                    CreativeModeTabManager.reload();
+                    EmiScreenManager.recalculate();
+                } else {
+                    mc.execute(() -> {
+                        CreativeModeTabManager.reload();
+                        EmiScreenManager.recalculate();
+                    });
+                }
             }
         } catch (Throwable ignored) {
         }
@@ -312,6 +336,11 @@ public class KnownItems {
         invalidateCache();
     }
 
+    public static boolean isKnown(Item item) {
+        if (!isModEnabled()) return true;
+        return item != null && knownItems.contains(item);
+    }
+
     /**
      * Does the item represented by the given stack exist in the known set? Also returns true for
      * empty stacks so empty slots in the recipe don't count.
@@ -459,6 +488,32 @@ public class KnownItems {
 
     public static boolean shouldFilterIndex() {
         return isModEnabled() && getConfig().filterIndex;
+    }
+
+    public static boolean shouldHideEmptyRemiTabs() {
+        return isModEnabled() && getConfig().hideEmptyRemiTabs;
+    }
+
+    public static boolean hasDiscoveredItems(CreativeModeTab tab) {
+        if (tab == null) return false;
+        Collection<ItemStack> displayItems = tab.getDisplayItems();
+        if (displayItems.isEmpty()) return false;
+
+        for (ItemStack stack : displayItems) {
+            if (stack == null || stack.isEmpty()) continue;
+            if (isKnown(stack.getItem())) {
+                return true;
+            }
+        }
+        if (shouldDisplayCraftableInIndex()) {
+            for (ItemStack stack : displayItems) {
+                if (stack == null || stack.isEmpty()) continue;
+                if (isCraftable(EmiStack.of(stack))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public static boolean shouldDisplayCraftableInIndex() {
