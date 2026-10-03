@@ -17,7 +17,6 @@ public class ItemEmiStackMixin {
      * Suppress original numeric amount rendering when blackout is enabled and stack is undiscovered
      */
     @WrapOperation(
-            remap = false,
             method = "render",
             at =
             @At(
