@@ -13,6 +13,10 @@
     "text.autoconfig.emi_discovery.option.enabled.@Tooltip[0]": "Global toggle for EMI Discovery.",
     "text.autoconfig.emi_discovery.option.enabled.@Tooltip[1]": "When disabled, all discovery restrictions are lifted and EMI operates in standard mode.",
 
+    "text.autoconfig.emi_discovery.option.disableInCreative": "Disable in Creative Mode",
+    "text.autoconfig.emi_discovery.option.disableInCreative.@Tooltip[0]": "When enabled, all discovery restrictions are lifted while you are in Creative mode.",
+    "text.autoconfig.emi_discovery.option.disableInCreative.@Tooltip[1]": "Filtering resumes automatically when you switch back to another game mode.",
+
     "text.autoconfig.emi_discovery.option.enableFluidDiscovery": "Enable Fluid Discovery",
     "text.autoconfig.emi_discovery.option.enableFluidDiscovery.@Tooltip[0]": "When enabled, undiscovered fluids are hidden or blacked out.",
     "text.autoconfig.emi_discovery.option.enableFluidDiscovery.@Tooltip[1]": "When disabled, all fluids are considered discovered and visible.",

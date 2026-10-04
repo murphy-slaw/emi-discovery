@@ -15,9 +15,11 @@ import dev.emi.emi.api.EmiApi;
 import dev.emi.emi.api.recipe.EmiCraftingRecipe;
 import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.recipe.EmiRecipeCategory;
+import dev.emi.emi.api.stack.Comparison;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.recipe.EmiTagRecipe;
+import dev.emi.emi.registry.EmiComparisonDefaults;
 import dev.emi.emi.registry.EmiRecipes;
 import dev.emi.emi.screen.EmiScreenManager;
 import net.funkpla.emi_discovery.compat.RemiCompat;
@@ -26,13 +28,17 @@ import net.funkpla.emi_discovery.mixin.MinecraftServerStorageSourceAccessor;
 import net.funkpla.emi_discovery.mixin.emi.accessor.EmiTagRecipeAccessor;
 import net.funkpla.emi_discovery.platform.Services;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.core.Holder;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.TagParser;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.item.*;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import org.apache.commons.io.IOUtils;
@@ -54,6 +60,7 @@ import java.util.stream.Stream;
 
 public class KnownItems {
     private static final Set<Item> knownItems = new HashSet<>();
+    private static final Map<Item, List<EmiStack>> knownVariants = new HashMap<>();
     private static final Set<Fluid> knownFluids = new HashSet<>();
     private static final Set<MobEffect> knownEffects = new HashSet<>();
     private static final File PRE_DISCOVERED =
@@ -80,7 +87,9 @@ public class KnownItems {
                                 }
                             });
 
+    private static volatile boolean comparisonsReady = false;
     private static boolean wasHidingRemiTabs = false;
+    private static boolean wasCreativeBypass = false;
 
     public static int getUpdateCount() {
         return UPDATE_COUNT.get();
@@ -126,7 +135,7 @@ public class KnownItems {
     public static void addKnown(ItemStack stack) {
         if (stack != null && !stack.isEmpty()) {
             Item item = stack.getItem();
-            boolean itemAdded = knownItems.add(item);
+            boolean itemAdded = addKnownStack(DiscoveryStacks.normalize(stack));
             boolean fluidAdded = false;
 
             if (item instanceof BucketItem bucketItem) {
@@ -151,6 +160,90 @@ public class KnownItems {
                 saveToDisk();
             }
         }
+    }
+
+    /**
+     * Records a discovered stack, either as a whole item or as one variant of it, depending on EMI's comparison.
+     */
+    private static boolean addKnownStack(ItemStack stack) {
+        Item item = stack.getItem();
+        if (knownItems.contains(item)) return false;
+        if (comparisonsReady && !hasVariants(item)) {
+            knownVariants.remove(item);
+            return knownItems.add(item);
+        }
+        EmiStack emiStack = EmiStack.of(stack);
+        List<EmiStack> variants = knownVariants.computeIfAbsent(item, i -> new ArrayList<>());
+        for (EmiStack variant : variants) {
+            if (isSameVariant(emiStack, variant)) return false;
+        }
+        variants.add(emiStack);
+        return true;
+    }
+
+    /**
+     * Does EMI treat stacks of this item with different components as different entries?
+     */
+    private static boolean hasVariants(Item item) {
+        return EmiComparisonDefaults.get(item) != Comparison.DEFAULT_COMPARISON;
+    }
+
+    /**
+     * Before EMI's comparisons are loaded, only exact component matches count as the same variant.
+     */
+    private static boolean isSameVariant(EmiStack a, EmiStack b) {
+        if (comparisonsReady) return a.isEqual(b);
+        return ItemStack.isSameItemSameComponents(a.getItemStack(), b.getItemStack());
+    }
+
+    private static boolean isKnownItem(Item item, EmiStack stack) {
+        if (knownItems.contains(item)) return true;
+        List<EmiStack> variants = knownVariants.get(item);
+        if (variants == null) return false;
+        for (EmiStack variant : variants) {
+            if (stack.isEqual(variant)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Called when EMI starts rebuilding its comparisons, possibly off the main thread.
+     */
+    public static void onComparisonsInvalidated() {
+        comparisonsReady = false;
+    }
+
+    /**
+     * Called on the main thread once EMI's comparisons are registered.
+     */
+    public static void onComparisonsReady() {
+        comparisonsReady = true;
+        boolean changed = false;
+        Iterator<Map.Entry<Item, List<EmiStack>>> it = knownVariants.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<Item, List<EmiStack>> entry = it.next();
+            Item item = entry.getKey();
+            if (knownItems.contains(item) || !hasVariants(item)) {
+                knownItems.add(item);
+                it.remove();
+                changed = true;
+                continue;
+            }
+            List<EmiStack> merged = new ArrayList<>();
+            for (EmiStack variant : entry.getValue()) {
+                if (merged.stream().noneMatch(variant::isEqual)) {
+                    merged.add(variant);
+                }
+            }
+            if (merged.size() != entry.getValue().size()) {
+                entry.setValue(merged);
+                changed = true;
+            }
+        }
+        if (changed) {
+            saveToDisk();
+        }
+        invalidateCache();
     }
 
     public static void addKnown(Fluid fluid) {
@@ -216,7 +309,14 @@ public class KnownItems {
     }
 
     public static boolean removeKnownItems(Collection<Item> items) {
-        return removeKnownElements(knownItems, items);
+        if (items == null || items.isEmpty()) return false;
+        boolean variantsRemoved = knownVariants.keySet().removeAll(items);
+        boolean itemsRemoved = removeKnownElements(knownItems, items);
+        if (variantsRemoved && !itemsRemoved) {
+            invalidateCache();
+            saveToDisk();
+        }
+        return variantsRemoved || itemsRemoved;
     }
 
     public static boolean removeKnownFluids(Collection<Fluid> fluids) {
@@ -228,7 +328,7 @@ public class KnownItems {
     }
 
     public static boolean removeKnown(Item item) {
-        if (item != null && knownItems.remove(item)) {
+        if (item != null && (knownItems.remove(item) | knownVariants.remove(item) != null)) {
             invalidateCache();
             saveToDisk();
             return true;
@@ -282,8 +382,8 @@ public class KnownItems {
         saveToDisk();
     }
 
-    public static boolean addByIds(Collection<ResourceLocation> ids) {
-        if (ids == null || ids.isEmpty()) return false;
+    public static void addByIds(Collection<ResourceLocation> ids) {
+        if (ids == null || ids.isEmpty()) return;
         boolean changed = false;
         for (ResourceLocation id : ids) {
             if (id == null) continue;
@@ -304,16 +404,17 @@ public class KnownItems {
             invalidateCache();
             saveToDisk();
         }
-        return changed;
     }
 
-    public static boolean removeByIds(Collection<ResourceLocation> ids) {
-        if (ids == null || ids.isEmpty()) return false;
+    public static void removeByIds(Collection<ResourceLocation> ids) {
+        if (ids == null || ids.isEmpty()) return;
         boolean changed = false;
         for (ResourceLocation id : ids) {
             if (id == null) continue;
             if (BuiltInRegistries.ITEM.containsKey(id)) {
-                changed |= knownItems.remove(BuiltInRegistries.ITEM.get(id));
+                Item item = BuiltInRegistries.ITEM.get(id);
+                changed |= knownItems.remove(item);
+                changed |= knownVariants.remove(item) != null;
             }
             if (BuiltInRegistries.FLUID.containsKey(id)) {
                 changed |= knownFluids.remove(BuiltInRegistries.FLUID.get(id));
@@ -326,11 +427,11 @@ public class KnownItems {
             invalidateCache();
             saveToDisk();
         }
-        return changed;
     }
 
     public static void clear() {
         knownItems.clear();
+        knownVariants.clear();
         knownFluids.clear();
         knownEffects.clear();
         invalidateCache();
@@ -344,7 +445,7 @@ public class KnownItems {
      */
     public static boolean isKnown(ItemStack stack) {
         if (!isModEnabled()) return true;
-        return stack == null || stack.isEmpty() || knownItems.contains(stack.getItem());
+        return stack == null || stack.isEmpty() || isKnownItem(stack.getItem(), EmiStack.of(stack));
     }
 
     /**
@@ -355,7 +456,7 @@ public class KnownItems {
         if (fluid == null || fluid == Fluids.EMPTY) return true;
         if (knownFluids.contains(fluid)) return true;
         Item bucket = fluid.getBucket();
-        return bucket != Items.AIR && knownItems.contains(bucket);
+        return bucket != Items.AIR && isKnownItem(bucket, EmiStack.of(bucket));
     }
 
     /**
@@ -382,7 +483,7 @@ public class KnownItems {
 
         Object key = stack.getKey();
         if (key instanceof Item item) {
-            return knownItems.contains(item);
+            return isKnownItem(item, stack);
         }
         if (key instanceof ItemStack itemStack) {
             return isKnown(itemStack);
@@ -470,7 +571,24 @@ public class KnownItems {
     }
 
     public static boolean isModEnabled() {
-        return getConfig().enabled;
+        EmiDiscoveryConfig config = getConfig();
+        return config.enabled && !(config.disableInCreative && isClientCreative());
+    }
+
+    private static boolean isClientCreative() {
+        Minecraft mc = Minecraft.getInstance();
+        return mc.gameMode != null && mc.gameMode.getPlayerMode() == GameType.CREATIVE;
+    }
+
+    /**
+     * Refreshes filtering when the creative bypass toggles (game mode change, world join/leave).
+     */
+    public static void checkCreativeBypass() {
+        boolean bypass = getConfig().disableInCreative && isClientCreative();
+        if (bypass != wasCreativeBypass) {
+            wasCreativeBypass = bypass;
+            invalidateCache();
+        }
     }
 
     public static boolean isFluidDiscoveryEnabled() {
@@ -801,8 +919,14 @@ public class KnownItems {
                 JsonArray json = gson.fromJson(jsonReader, JsonArray.class);
 
                 if (json != null) {
+                    HolderLookup.Provider registries = getRegistries();
                     for (JsonElement element : json) {
-                        ResourceLocation loc = ResourceLocation.tryParse(element.getAsString());
+                        String entry = element.getAsString();
+                        if (entry.startsWith("{")) {
+                            loadVariant(entry, registries);
+                            continue;
+                        }
+                        ResourceLocation loc = ResourceLocation.tryParse(entry);
                         if (loc == null) continue;
                         if (BuiltInRegistries.ITEM.containsKey(loc)) {
                             knownItems.add(BuiltInRegistries.ITEM.get(loc));
@@ -825,11 +949,33 @@ public class KnownItems {
         invalidateCache();
     }
 
-    static JsonArray discoveredToJson() {
+    private static void loadVariant(String snbt, HolderLookup.Provider registries) {
+        if (registries == null) {
+            Constants.LOG.warn("Skipping saved item variant, no registry access: {}", snbt);
+            return;
+        }
+        try {
+            ItemStack.parse(registries, TagParser.parseTag(snbt)).ifPresent(KnownItems::addKnownStack);
+        } catch (Exception e) {
+            Constants.LOG.warn("Skipping unreadable saved item variant: {}", snbt, e);
+        }
+    }
+
+    private static HolderLookup.Provider getRegistries() {
+        ClientPacketListener connection = Minecraft.getInstance().getConnection();
+        return connection != null ? connection.registryAccess() : null;
+    }
+
+    static JsonArray discoveredToJson(HolderLookup.Provider registries) {
         JsonArray array = new JsonArray();
         for (Item item : knownItems) {
             ResourceLocation loc = BuiltInRegistries.ITEM.getKey(item);
             array.add(loc.toString());
+        }
+        for (List<EmiStack> variants : knownVariants.values()) {
+            for (EmiStack variant : variants) {
+                array.add(variant.getItemStack().save(registries).toString());
+            }
         }
         for (Fluid fluid : knownFluids) {
             ResourceLocation loc = BuiltInRegistries.FLUID.getKey(fluid);
@@ -854,9 +1000,14 @@ public class KnownItems {
     }
 
     public static void saveToDisk() {
+        HolderLookup.Provider registries = getRegistries();
+        if (registries == null && !knownVariants.isEmpty()) {
+            Constants.LOG.warn("Skipping save, no registry access to encode item variants");
+            return;
+        }
         final JsonArray jsonSnapshot;
         synchronized (knownItems) {
-            jsonSnapshot = discoveredToJson();
+            jsonSnapshot = discoveredToJson(registries);
         }
         SAVE_EXECUTOR.execute(() -> {
             JsonWriter writer = null;
