@@ -32,6 +32,7 @@ publishMods {
         clientRequired = true
         serverRequired = true
         requires("cloth-config")
+        requires("emi")
         optional("reliable-emi")
     }
     def mrOptions = modrinthOptions{
@@ -39,7 +40,8 @@ publishMods {
         accessToken = providers.environmentVariable("MODRINTH_TOKEN")
         minecraftVersions.add(project.minecraft_version)
         requires("cloth-config")
-
+        requires("emi")
+        optional("reliable-emi")
     }
 
     curseforge("curseforgeFabric"){

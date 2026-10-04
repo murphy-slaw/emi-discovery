@@ -1,5 +1,6 @@
 package net.funkpla.emi_discovery.mixin;
 
+import net.funkpla.emi_discovery.DiscoveryStacks;
 import net.funkpla.emi_discovery.ServerDiscoveryTracker;
 import net.funkpla.emi_discovery.network.client.S2CItemStackPacket;
 import net.funkpla.emi_discovery.platform.Services;
@@ -19,8 +20,8 @@ public class InventoryChangeTriggerMixin {
             method = "trigger(Lnet/minecraft/server/level/ServerPlayer;Lnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/item/ItemStack;)V",
             at = @At(value = "HEAD"))
     private void sendPacket(ServerPlayer pPlayer, Inventory pInventory, ItemStack pStack, CallbackInfo ci) {
-        if (pStack != null && !pStack.isEmpty() && ServerDiscoveryTracker.shouldSendAndTrack(pPlayer, pStack.getItem())) {
-            Services.PLATFORM.sendToClient(new S2CItemStackPacket(pStack), pPlayer);
+        if (pStack != null && !pStack.isEmpty() && ServerDiscoveryTracker.shouldSendAndTrack(pPlayer, pStack)) {
+            Services.PLATFORM.sendToClient(new S2CItemStackPacket(DiscoveryStacks.normalize(pStack)), pPlayer);
         }
     }
 }

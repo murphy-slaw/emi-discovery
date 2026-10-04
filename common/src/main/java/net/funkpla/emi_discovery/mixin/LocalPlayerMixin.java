@@ -34,6 +34,7 @@ public class LocalPlayerMixin {
 
     @Inject(method = "tick", at = @At("HEAD"))
     private void emi_discovery$onTickCheckFluids(CallbackInfo ci) {
+        KnownItems.checkCreativeBypass();
         if (!KnownItems.isFluidDiscoveryEnabled()) return;
         LocalPlayer player = (LocalPlayer) (Object) this;
         Level level = player.level();

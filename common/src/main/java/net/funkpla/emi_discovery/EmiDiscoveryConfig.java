@@ -14,6 +14,10 @@ public class EmiDiscoveryConfig implements ConfigData {
 
     @ConfigEntry.Category("general")
     @ConfigEntry.Gui.Tooltip(count = 2)
+    public boolean disableInCreative = false;
+
+    @ConfigEntry.Category("general")
+    @ConfigEntry.Gui.Tooltip(count = 2)
     public boolean enableFluidDiscovery = true;
 
     @ConfigEntry.Category("general")
