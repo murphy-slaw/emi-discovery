@@ -34,6 +34,8 @@
         "emi.accessor.EmiTagRecipeAccessor",
         "emi.accessor.IngredientTooltipComponentAccessor",
         "emi.accessor.TagEmiIngredientAccessor",
+        "emi.EmiScreenManagerScreenspaceMixin",
+        "emi.FluidEmiStackMixin",
         "remi.CreativeModeTabManagerMixin",
         "remi.EmiGroupStackMixin",
         "remi.StackManagerMixin"

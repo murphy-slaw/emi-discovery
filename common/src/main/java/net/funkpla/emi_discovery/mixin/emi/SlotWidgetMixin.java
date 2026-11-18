@@ -3,12 +3,10 @@ package net.funkpla.emi_discovery.mixin.emi;
 import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
-import com.mojang.blaze3d.systems.RenderSystem;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.widget.Bounds;
 import dev.emi.emi.api.widget.SlotWidget;
 import net.funkpla.emi_discovery.KnownItems;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.network.chat.Component;
@@ -38,22 +36,7 @@ public class SlotWidgetMixin {
     private void renderSlotStack(
             EmiIngredient instance, GuiGraphics draw, int x, int y, float delta, Operation<Void> original) {
         if (KnownItems.shouldBlackoutRecipes() && !KnownItems.shouldIngredientDisplay(instance)) {
-            draw.flush();
-            RenderSystem.setShaderColor(0.0f, 0.0f, 0.0f, 1.0f);
-            original.call(instance, draw, x, y, delta);
-            draw.flush();
-            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-
-            if (KnownItems.shouldShowQuestionMarkOverlay()) {
-                Minecraft client = Minecraft.getInstance();
-                String q = "?";
-                int textX = x + 16 - client.font.width(q);
-                int textY = y + 16 - client.font.lineHeight + 1;
-                draw.pose().pushPose();
-                draw.pose().translate(0, 0, 200);
-                draw.drawString(client.font, q, textX, textY, 0xFFE0E0E0, true);
-                draw.pose().popPose();
-            }
+            KnownItems.wrapBlackout(draw, x, y, () -> original.call(instance, draw, x, y, delta));
         } else {
             original.call(instance, draw, x, y, delta);
         }
