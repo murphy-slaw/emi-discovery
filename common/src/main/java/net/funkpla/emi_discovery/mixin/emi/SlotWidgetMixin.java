@@ -35,8 +35,8 @@ public class SlotWidgetMixin {
             at = @At(value = "INVOKE", remap = true, target = "Ldev/emi/emi/api/stack/EmiIngredient;render(Lnet/minecraft/client/gui/GuiGraphics;IIF)V"))
     private void renderSlotStack(
             EmiIngredient instance, GuiGraphics draw, int x, int y, float delta, Operation<Void> original) {
-        if (KnownItems.shouldBlackoutRecipes() && !KnownItems.shouldIngredientDisplay(instance)) {
-            KnownItems.wrapBlackout(draw, x, y, () -> original.call(instance, draw, x, y, delta));
+        if (KnownItems.shouldBlackoutRecipes() && !KnownItems.shouldIngredientDisplayInRecipes(instance)) {
+            KnownItems.renderBlackedOut(draw, x, y, () -> original.call(instance, draw, x, y, delta));
         } else {
             original.call(instance, draw, x, y, delta);
         }
@@ -48,12 +48,12 @@ public class SlotWidgetMixin {
         SlotWidget widget = (SlotWidget) (Object) this;
         if (widget.getStack().isEmpty()) return;
         if (KnownItems.shouldBlackoutRecipes()
-                && !KnownItems.shouldIngredientDisplay(widget.getStack())
+                && !KnownItems.shouldIngredientDisplayInRecipes(widget.getStack())
                 && KnownItems.shouldObscureTooltips()) {
             List<ClientTooltipComponent> list = new ArrayList<>();
             list.add(ClientTooltipComponent.create(Component.translatable("tooltip.emi_discovery.obscured").getVisualOrderText()));
             cir.setReturnValue(list);
-        } else if (!KnownItems.shouldBlackoutRecipes() && !KnownItems.shouldIngredientDisplay(widget.getStack())) {
+        } else if (!KnownItems.shouldBlackoutRecipes() && !KnownItems.shouldIngredientDisplayInRecipes(widget.getStack())) {
             cir.setReturnValue(List.of());
         }
     }

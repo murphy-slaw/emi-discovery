@@ -27,7 +27,7 @@ public class ItemEmiStackMixin {
     private void suppressRenderAmount(
             EmiDrawContext context, int x, int y, Component amount, Operation<Void> original) {
         if (KnownItems.shouldBlackoutRecipes()
-                && !KnownItems.shouldStackDisplay((ItemEmiStack) (Object) this)) {
+                && !KnownItems.shouldStackDisplayInRecipes((ItemEmiStack) (Object) this)) {
             return;
         }
         original.call(context, x, y, amount);

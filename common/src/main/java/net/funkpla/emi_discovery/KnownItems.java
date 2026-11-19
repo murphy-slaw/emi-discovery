@@ -1,10 +1,5 @@
 package net.funkpla.emi_discovery;
 
-import com.evandev.remi.feature.creativemodetab.CreativeModeTabManager;
-import com.evandev.remi.integration.emi.StackManager;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -19,10 +14,13 @@ import dev.emi.emi.api.recipe.EmiRecipeCategory;
 import dev.emi.emi.api.stack.Comparison;
 import dev.emi.emi.api.stack.EmiIngredient;
 import dev.emi.emi.api.stack.EmiStack;
+import dev.emi.emi.config.SidebarType;
 import dev.emi.emi.recipe.EmiTagRecipe;
 import dev.emi.emi.registry.EmiComparisonDefaults;
 import dev.emi.emi.registry.EmiRecipes;
 import dev.emi.emi.screen.EmiScreenManager;
+import net.funkpla.emi_discovery.advancement.AdvancementCache;
+import net.funkpla.emi_discovery.advancement.AdvancementLocks;
 import net.funkpla.emi_discovery.compat.RemiCompat;
 import net.funkpla.emi_discovery.mixin.BucketItemAccessor;
 import net.funkpla.emi_discovery.mixin.MinecraftServerStorageSourceAccessor;
@@ -43,18 +41,17 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import org.apache.commons.io.IOUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.Reader;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -78,16 +75,8 @@ public class KnownItems {
         t.setDaemon(true);
         return t;
     });
-    private static final LoadingCache<EmiStack, Boolean> stackDisplayCache =
-            CacheBuilder.newBuilder()
-                    .maximumSize(100000)
-                    .build(
-                            new CacheLoader<>() {
-        @Override
-        public @NotNull Boolean load(@NotNull EmiStack stack) {
-            return shouldStackDisplayUncached(stack);
-        }
-    });
+    private static final int STACK_DISPLAY_CACHE_LIMIT = 100000;
+    private static volatile ConcurrentHashMap<EmiStack, Boolean> stackDisplayCache = new ConcurrentHashMap<>();
 
     private static volatile boolean comparisonsReady = false;
     private static boolean wasHidingRemiTabs = false;
@@ -98,8 +87,18 @@ public class KnownItems {
     }
 
     public static void invalidateCache() {
-        stackDisplayCache.invalidateAll();
+        stackDisplayCache = new ConcurrentHashMap<>();
         UPDATE_COUNT.getAndIncrement();
+        Minecraft mc = Minecraft.getInstance();
+        if (mc == null) return;
+        if (mc.isSameThread()) {
+            refreshEmi();
+        } else {
+            mc.execute(KnownItems::refreshEmi);
+        }
+    }
+
+    private static void refreshEmi() {
         if (REMI_LOADED) {
             RemiCompat.onFilterChanged();
         }
@@ -110,27 +109,15 @@ public class KnownItems {
         } catch (Throwable ignored) {
         }
         try {
-            if (StackManager.sourceStacks != null && !StackManager.sourceStacks.isEmpty()) {
-                StackManager.buildStacks(StackManager.sourceStacks);
-                StackManager.repopulateIndexPanelsIfDirty();
+            for (SidebarType type : SidebarType.values()) {
+                EmiScreenManager.repopulatePanels(type);
             }
         } catch (Throwable ignored) {
         }
-        try {
-            if (shouldHideEmptyRemiTabs() || wasHidingRemiTabs) {
-                wasHidingRemiTabs = shouldHideEmptyRemiTabs();
-                Minecraft mc = Minecraft.getInstance();
-                if (mc.isSameThread()) {
-                    CreativeModeTabManager.reload();
-                    EmiScreenManager.recalculate();
-                } else {
-                    mc.execute(() -> {
-                        CreativeModeTabManager.reload();
-                        EmiScreenManager.recalculate();
-                    });
-                }
-            }
-        } catch (Throwable ignored) {
+        boolean hideTabs = shouldHideEmptyRemiTabs();
+        if (REMI_LOADED && (hideTabs || wasHidingRemiTabs)) {
+            wasHidingRemiTabs = hideTabs;
+            RemiCompat.reloadTabs();
         }
     }
 
@@ -668,12 +655,149 @@ public class KnownItems {
         return isModEnabled() && getConfig().blackoutUnknownInRecipes;
     }
 
+    public static boolean isIndexOnly() {
+        return isModEnabled() && getConfig().indexOnly;
+    }
+
+    /**
+     * Is this stack an undiscovered item that is still waiting on its advancement (see {@link AdvancementLocks})?
+     */
+    public static boolean isLocked(EmiStack stack) {
+        if (stack == null || stack.isEmpty() || !isModEnabled() || !AdvancementLocks.hasLocks()) return false;
+        if (REMI_LOADED) {
+            List<EmiStack> group = RemiCompat.getGroupContents(stack);
+            if (group != null) {
+                if (group.isEmpty()) return false;
+                for (EmiStack member : group) {
+                    if (!isLocked(member)) return false;
+                }
+                return true;
+            }
+            EmiStack real = RemiCompat.unwrap(stack);
+            if (real != stack) return isLocked(real);
+        }
+        Item item;
+        if (stack.getKey() instanceof Item keyItem) {
+            item = keyItem;
+        } else {
+            ItemStack itemStack = stack.getItemStack();
+            if (itemStack == null || itemStack.isEmpty()) return false;
+            item = itemStack.getItem();
+        }
+        return AdvancementLocks.isLocked(item) && !isKnownItem(item, stack);
+    }
+
+    /**
+     * An ingredient is locked when every stack in it is locked.
+     */
+    public static boolean isLocked(EmiIngredient ingredient) {
+        if (ingredient == null || ingredient.isEmpty()) return false;
+        if (ingredient instanceof EmiStack stack) return isLocked(stack);
+        List<EmiStack> stacks = ingredient.getEmiStacks();
+        if (stacks.isEmpty()) return false;
+        for (EmiStack stack : stacks) {
+            if (!isLocked(stack)) return false;
+        }
+        return true;
+    }
+
+    /**
+     * Should this stack be drawn on recipe screens, in tooltips and in tag lists?
+     */
+    public static boolean shouldStackDisplayInRecipes(EmiStack stack) {
+        if (!isModEnabled()) return true;
+        if (isLocked(stack)) return false;
+        return isIndexOnly() || shouldStackDisplay(stack);
+    }
+
+    public static boolean shouldIngredientDisplayInRecipes(EmiIngredient ingredient) {
+        if (ingredient == null || ingredient.isEmpty() || !isModEnabled()) return true;
+        if (isLocked(ingredient)) return false;
+        return isIndexOnly() || shouldIngredientDisplay(ingredient);
+    }
+
+    private static boolean hasLockedOutput(EmiRecipe recipe) {
+        if (!AdvancementLocks.hasLocks()) return false;
+        List<EmiStack> outputs = recipe.getOutputs();
+        if (outputs == null) return false;
+        for (EmiStack output : outputs) {
+            if (isLocked(output)) return true;
+        }
+        return false;
+    }
+
+    private static boolean hasLockedInput(EmiRecipe recipe) {
+        if (!AdvancementLocks.hasLocks()) return false;
+        List<EmiIngredient> inputs = recipe.getInputs();
+        if (inputs != null) {
+            for (EmiIngredient input : inputs) {
+                if (isLocked(input)) return true;
+            }
+        }
+        List<EmiIngredient> catalysts = recipe.getCatalysts();
+        if (catalysts != null) {
+            for (EmiIngredient catalyst : catalysts) {
+                if (isLocked(catalyst)) return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Are REMI's creative tabs hidden because the configured advancement hasn't been earned yet?
+     */
+    public static boolean areRemiTabsLocked() {
+        if (!isModEnabled()) return false;
+        ResourceLocation id = getRemiTabsAdvancement();
+        return id != null && !AdvancementCache.isDone(id);
+    }
+
+    public static ResourceLocation getRemiTabsAdvancement() {
+        String id = getConfig().remiTabsAdvancement;
+        if (id == null || id.isBlank()) return null;
+        return ResourceLocation.tryParse(id.trim());
+    }
+
     public static boolean shouldBlackoutIndex() {
         return isModEnabled() && !getConfig().filterIndex && getConfig().blackoutUnknownInIndex;
     }
 
     public static boolean shouldObscureTooltips() {
         return isModEnabled() && getConfig().obscureTooltips;
+    }
+
+    private static int blackoutDepth = 0;
+
+    public static boolean isRenderingBlackout() {
+        return blackoutDepth > 0;
+    }
+
+    /**
+     * Draw a stack as a black silhouette, with the optional "?" overlay. Annoyingly we can't use
+     * EMI's StackBatcher, because batched stacks are drawn later and ignore the shader colour set here.
+     */
+    public static void renderBlackedOut(GuiGraphics draw, int x, int y, Runnable drawer) {
+        draw.flush();
+        RenderSystem.setShaderColor(0.0f, 0.0f, 0.0f, 1.0f);
+        blackoutDepth++;
+        try {
+            drawer.run();
+            draw.flush();
+        } finally {
+            blackoutDepth--;
+            RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        }
+
+        if (shouldShowQuestionMarkOverlay()) {
+            Minecraft client = Minecraft.getInstance();
+            String q = "?";
+            int textX = x + 16 - client.font.width(q);
+            int textY = y + 16 - client.font.lineHeight + 1;
+            draw.pose().pushPose();
+            draw.pose().translate(0, 0, 200);
+            draw.drawString(client.font, q, textX, textY, 0xFFE0E0E0, true);
+            draw.pose().popPose();
+        }
     }
 
     public static boolean shouldShowQuestionMarkOverlay() {
@@ -696,6 +820,7 @@ public class KnownItems {
             EmiStack real = RemiCompat.unwrap(emiStack);
             if (real != emiStack) return isCraftable(real);
         }
+        if (isLocked(emiStack)) return false;
         if (EmiRecipes.manager == null) return false;
         try {
             List<EmiRecipe> recipes = EmiRecipes.manager.getRecipesByOutput(emiStack);
@@ -750,12 +875,21 @@ public class KnownItems {
      * Switch between displaying only known stacks and known or craftable stacks based on the config
      */
     public static boolean shouldStackDisplay(EmiStack emiStack) {
+        if (emiStack == null) return false;
+        ConcurrentHashMap<EmiStack, Boolean> cache = stackDisplayCache;
+        Boolean cached = cache.get(emiStack);
+        if (cached != null) return cached;
+        boolean display;
         try {
-            return stackDisplayCache.get(emiStack);
-        } catch (ExecutionException | NullPointerException e) {
+            display = shouldStackDisplayUncached(emiStack);
+        } catch (RuntimeException e) {
             Constants.LOG.error("Unexpected error checking stack for display", e);
             return false;
         }
+        if (cache.size() < STACK_DISPLAY_CACHE_LIMIT) {
+            cache.put(emiStack, display);
+        }
+        return display;
     }
 
     public static boolean shouldStackDisplayUncached(EmiStack emiStack) {
@@ -812,6 +946,14 @@ public class KnownItems {
     public static boolean areAllKnown(EmiRecipe recipe) {
         if (!isModEnabled()) return true;
         if (recipe == null) return true;
+        if (hasLockedOutput(recipe)) return false;
+        if (isIndexOnly()) {
+            if (recipe instanceof EmiTagRecipe tagRecipe) {
+                List<EmiStack> stacks = ((EmiTagRecipeAccessor) tagRecipe).getStacks();
+                return stacks != null && stacks.stream().anyMatch(stack -> !isLocked(stack));
+            }
+            return !hasLockedInput(recipe);
+        }
         if (!displayWithUnknownWorkstation() && !isWorkstationKnownForRecipe(recipe)) return false;
         if (!catalystsKnown(recipe)) return false;
         if (recipe instanceof EmiTagRecipe tagRecipe) {
@@ -831,15 +973,17 @@ public class KnownItems {
 
     /**
      * Returns a list of EmiIngredients representing workstations associated with the given
-     * EmiRecipeCategory that are known.
+     * EmiRecipeCategory that are known (or, when unknown workstations are allowed, not locked).
      */
     public static List<EmiIngredient> workstationsFiltered(EmiRecipeCategory category) {
         if (category == null || EmiApi.getRecipeManager() == null) return List.of();
         List<EmiIngredient> workstations = EmiApi.getRecipeManager().getWorkstations(category);
         if (workstations == null || workstations.isEmpty()) return List.of();
+        boolean onlyLocked = isIndexOnly() || displayWithUnknownWorkstation();
+        if (onlyLocked && !AdvancementLocks.hasLocks()) return workstations;
         List<EmiIngredient> filtered = new ArrayList<>(workstations.size());
         for (EmiIngredient ws : workstations) {
-            if (isKnown(ws)) {
+            if (onlyLocked ? !isLocked(ws) : isKnown(ws)) {
                 filtered.add(ws);
             }
         }
@@ -884,6 +1028,19 @@ public class KnownItems {
         if (!isModEnabled()) {
             return entrySet.stream();
         }
+        if (isIndexOnly()) {
+            if (!AdvancementLocks.hasLocks() || shouldBlackoutRecipes()) {
+                return entrySet.stream();
+            }
+            Map<EmiRecipeCategory, List<EmiRecipe>> unlocked = new HashMap<>();
+            for (Map.Entry<EmiRecipeCategory, List<EmiRecipe>> entry : entrySet) {
+                List<EmiRecipe> filtered = entry.getValue().stream().filter(KnownItems::areAllKnown).toList();
+                if (!filtered.isEmpty()) {
+                    unlocked.put(entry.getKey(), filtered);
+                }
+            }
+            return unlocked.entrySet().stream();
+        }
         boolean blackout = shouldBlackoutRecipes();
         boolean allowUnknownWorkstation = displayWithUnknownWorkstation();
 
@@ -905,31 +1062,6 @@ public class KnownItems {
             }
         }
         return result.entrySet().stream();
-    }
-
-    public static void wrapBlackout(GuiGraphics draw, int x, int y, Callable<Void> drawer) {
-        draw.flush();
-        RenderSystem.setShaderColor(0.0f, 0.0f, 0.0f, 1.0f);
-
-        try {
-            drawer.call();
-        } catch (Exception e) {
-            Constants.LOG.error(e.getLocalizedMessage());
-        }
-
-        draw.flush();
-        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-
-        if (KnownItems.shouldShowQuestionMarkOverlay()) {
-            Minecraft client = Minecraft.getInstance();
-            String q = "?";
-            int textX = x + 16 - client.font.width(q);
-            int textY = y + 16 - client.font.lineHeight + 1;
-            draw.pose().pushPose();
-            draw.pose().translate(0, 0, 200);
-            draw.drawString(client.font, q, textX, textY, 0xFFE0E0E0, true);
-            draw.pose().popPose();
-        }
     }
 
     public static void loadFromDisk() {
@@ -1016,7 +1148,27 @@ public class KnownItems {
     }
 
     public static Path getKnownItemsPath() {
-        return DATA_PATH.resolve(getWorldName().replace('/', '_') + ".json");
+        String worldName = getWorldName();
+        Path path = DATA_PATH.resolve(sanitizeFileName(worldName) + ".json");
+        if (!Files.exists(path)) {
+            try {
+                Path legacy = DATA_PATH.resolve(worldName.replace('/', '_') + ".json");
+                if (Files.exists(legacy)) return legacy;
+            } catch (InvalidPathException ignored) {
+            }
+        }
+        return path;
+    }
+
+    /**
+     * Server names can contain characters that aren't allowed in file names, such as ':' on Windows.
+     */
+    static String sanitizeFileName(String name) {
+        String sanitized = name.replaceAll("[\\\\/:*?\"<>|\\p{Cntrl}]", "_").trim();
+        while (sanitized.endsWith(".")) {
+            sanitized = sanitized.substring(0, sanitized.length() - 1);
+        }
+        return sanitized.isEmpty() ? "unknown" : sanitized;
     }
 
     public static File getKnownItemsFile() {

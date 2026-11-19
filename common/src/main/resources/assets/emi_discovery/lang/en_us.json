@@ -41,6 +41,14 @@
     "text.autoconfig.emi_discovery.option.hideEmptyRemiTabs.@Tooltip[0]": "When enabled, Reliable EMI tabs containing no discovered items are hidden.",
     "text.autoconfig.emi_discovery.option.hideEmptyRemiTabs.@Tooltip[1]": "Tabs reappear once at least one item within them has been discovered.",
 
+    "text.autoconfig.emi_discovery.option.remiTabsAdvancement": "Reliable EMI Tabs Advancement",
+    "text.autoconfig.emi_discovery.option.remiTabsAdvancement.@Tooltip[0]": "Advancement ID (e.g. minecraft:story/root) that must be earned before any Reliable EMI tabs are shown.",
+    "text.autoconfig.emi_discovery.option.remiTabsAdvancement.@Tooltip[1]": "Leave empty to always show them.",
+
+    "text.autoconfig.emi_discovery.option.indexOnly": "Only Filter the Index",
+    "text.autoconfig.emi_discovery.option.indexOnly.@Tooltip[0]": "When enabled, undiscovered items are only hidden from the index. Recipe and usage screens show every recipe,",
+    "text.autoconfig.emi_discovery.option.indexOnly.@Tooltip[1]": "except that items still locked behind an advancement (emi_discovery:requires_advancement/... tags) are blacked out or hidden.",
+
     "text.autoconfig.emi_discovery.option.displayWithUnknownWorkstation": "Display Recipes for Undiscovered Workstations",
     "text.autoconfig.emi_discovery.option.displayWithUnknownWorkstation.@Tooltip[0]": "When enabled, recipes show even if you have not yet discovered the required workstation.",
     "text.autoconfig.emi_discovery.option.displayWithUnknownWorkstation.@Tooltip[1]": "When disabled, recipes remain hidden until you discover the station used to craft them.",
@@ -66,8 +74,8 @@
     "text.autoconfig.emi_discovery.option.blackoutUnknownInRecipes.@Tooltip[1]": "instead of hiding the recipe from the view entirely.",
 
     "text.autoconfig.emi_discovery.option.blackoutUnknownInIndex": "Black Out Unknown Items in Index",
-    "text.autoconfig.emi_discovery.option.blackoutUnknownInIndex.@Tooltip[0]": "When enabled, undiscovered items in the index are displayed using black silhouettes.",
-    "text.autoconfig.emi_discovery.option.blackoutUnknownInIndex.@Tooltip[1]": "If index filtering is enabled, this does nothing.",
+    "text.autoconfig.emi_discovery.option.blackoutUnknownInIndex.@Tooltip[0]": "When enabled, undiscovered items in EMI's sidebars are displayed using black silhouettes.",
+    "text.autoconfig.emi_discovery.option.blackoutUnknownInIndex.@Tooltip[1]": "Has no effect while Filter Items in Index is enabled.",
 
     "text.autoconfig.emi_discovery.option.obscureTooltips": "Obscure Tooltips on Blacked-Out Items",
     "text.autoconfig.emi_discovery.option.obscureTooltips.@Tooltip[0]": "When enabled, hover tooltips on undiscovered/blacked-out items display '???'.",

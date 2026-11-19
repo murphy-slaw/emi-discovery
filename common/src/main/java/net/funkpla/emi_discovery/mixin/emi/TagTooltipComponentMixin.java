@@ -33,7 +33,7 @@ public class TagTooltipComponentMixin {
         if (!KnownItems.isModEnabled() || KnownItems.shouldBlackoutRecipes()) {
             return stacks.stream().filter(s -> !s.isEmpty()).toList();
         }
-        return stacks.stream().filter(s -> !s.isEmpty() && KnownItems.shouldStackDisplay(s)).toList();
+        return stacks.stream().filter(s -> !s.isEmpty() && KnownItems.shouldStackDisplayInRecipes(s)).toList();
     }
 
     // thank you forge, very cool
@@ -85,7 +85,7 @@ public class TagTooltipComponentMixin {
             int y,
             int flags,
             Operation<Void> original) {
-        if (KnownItems.shouldIngredientDisplay(stack)) {
+        if (KnownItems.shouldIngredientDisplayInRecipes(stack)) {
             original.call(drawContext, stack, x, y, flags);
         } else if (KnownItems.shouldBlackoutRecipes()) {
             drawContext.raw().flush();

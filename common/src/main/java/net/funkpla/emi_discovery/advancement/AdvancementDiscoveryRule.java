@@ -44,10 +44,17 @@ public class AdvancementDiscoveryRule {
     @SerializedName(value = "patterns", alternate = {"regex"})
     public List<String> patterns = new ArrayList<>();
 
+    @SerializedName(value = "exclude", alternate = {"excludes"})
+    public Set<String> exclude = new HashSet<>();
+
+    @SerializedName(value = "types", alternate = {"type"})
+    public Set<String> types = new HashSet<>();
+
     private transient volatile Set<Item> resolvedItemsCache = null;
     private transient volatile Set<Fluid> resolvedFluidsCache = null;
     private transient volatile Set<MobEffect> resolvedEffectsCache = null;
     private transient volatile List<Pattern> compiledPatterns = null;
+    private transient volatile List<Pattern> compiledExcludePatterns = null;
 
     public boolean isSatisfied() {
         if (advancements == null || advancements.isEmpty()) {
@@ -66,6 +73,7 @@ public class AdvancementDiscoveryRule {
         if (resolvedItemsCache != null) return resolvedItemsCache;
         synchronized (this) {
             if (resolvedItemsCache != null) return resolvedItemsCache;
+            if (!appliesTo("items")) return resolvedItemsCache = Set.of();
             resolvedItemsCache = Collections.unmodifiableSet(
                 resolveRegistryEntries(BuiltInRegistries.ITEM, Registries.ITEM, items, tags)
             );
@@ -77,6 +85,7 @@ public class AdvancementDiscoveryRule {
         if (resolvedFluidsCache != null) return resolvedFluidsCache;
         synchronized (this) {
             if (resolvedFluidsCache != null) return resolvedFluidsCache;
+            if (!appliesTo("fluids")) return resolvedFluidsCache = Set.of();
             resolvedFluidsCache = Collections.unmodifiableSet(
                 resolveRegistryEntries(BuiltInRegistries.FLUID, Registries.FLUID, fluids, items, tags)
             );
@@ -88,6 +97,7 @@ public class AdvancementDiscoveryRule {
         if (resolvedEffectsCache != null) return resolvedEffectsCache;
         synchronized (this) {
             if (resolvedEffectsCache != null) return resolvedEffectsCache;
+            if (!appliesTo("effects")) return resolvedEffectsCache = Set.of();
             resolvedEffectsCache = Collections.unmodifiableSet(
                 resolveRegistryEntries(BuiltInRegistries.MOB_EFFECT, Registries.MOB_EFFECT, effects, items, tags)
             );
@@ -139,7 +149,57 @@ public class AdvancementDiscoveryRule {
             }
         }
 
+        if (exclude != null && !exclude.isEmpty() && !resolved.isEmpty()) {
+            Set<T> excluded = new HashSet<>();
+            List<String> plain = new ArrayList<>();
+            for (String entry : exclude) {
+                if (entry == null || entry.isEmpty()) continue;
+                if (entry.startsWith("#")) {
+                    resolveTag(entry.substring(1), registry, registryKey, excluded);
+                } else if (!(entry.length() > 1 && entry.startsWith("/") && entry.endsWith("/"))) {
+                    plain.add(entry);
+                }
+            }
+            for (String entry : plain) {
+                ResourceLocation loc = ResourceLocation.tryParse(entry);
+                if (loc != null && registry.containsKey(loc)) {
+                    excluded.add(registry.get(loc));
+                }
+            }
+            List<Pattern> excludePatterns = getCompiledExcludePatterns();
+            resolved.removeIf(value -> {
+                if (excluded.contains(value)) return true;
+                if (excludePatterns.isEmpty()) return false;
+                ResourceLocation key = registry.getKey(value);
+                if (key == null) return false;
+                String idStr = key.toString();
+                for (Pattern p : excludePatterns) {
+                    if (p.matcher(idStr).matches()) return true;
+                }
+                return false;
+            });
+        }
+
         return resolved;
+    }
+
+    private boolean appliesTo(String type) {
+        return types == null || types.isEmpty() || types.contains(type);
+    }
+
+    private List<Pattern> getCompiledExcludePatterns() {
+        if (compiledExcludePatterns != null) return compiledExcludePatterns;
+        List<Pattern> list = new ArrayList<>();
+        if (exclude != null) {
+            for (String s : exclude) {
+                if (s != null && s.length() > 1 && s.startsWith("/") && s.endsWith("/")) {
+                    Pattern p = compile(s);
+                    if (p != null) list.add(p);
+                }
+            }
+        }
+        compiledExcludePatterns = list;
+        return compiledExcludePatterns;
     }
 
     private <T> void resolveTag(String tagString, Registry<T> registry, ResourceKey<? extends Registry<T>> registryKey, Set<T> output) {

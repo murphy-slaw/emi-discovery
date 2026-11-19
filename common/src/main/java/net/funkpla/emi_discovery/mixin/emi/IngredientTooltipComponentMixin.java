@@ -32,7 +32,7 @@ public class IngredientTooltipComponentMixin {
         if (!KnownItems.isModEnabled() || KnownItems.shouldBlackoutRecipes()) {
             return ingredients.stream().filter(s -> !s.isEmpty()).toList();
         }
-        return ingredients.stream().filter(s -> !s.isEmpty() && KnownItems.shouldIngredientDisplay(s)).toList();
+        return ingredients.stream().filter(s -> !s.isEmpty() && KnownItems.shouldIngredientDisplayInRecipes(s)).toList();
     }
 
     // again, thank you forge, very cool
@@ -69,7 +69,7 @@ public class IngredientTooltipComponentMixin {
             int x,
             int y,
             Operation<Void> original) {
-        if (KnownItems.shouldIngredientDisplay(stack)) {
+        if (KnownItems.shouldIngredientDisplayInRecipes(stack)) {
             original.call(drawContext, stack, x, y);
         } else if (KnownItems.shouldBlackoutRecipes()) {
             drawContext.raw().flush();

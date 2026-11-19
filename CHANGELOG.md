@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] 2026-11-18
+
+### Added
+- "Only Filter the Index" option: undiscovered items are hidden from the index, but recipe and usage screens show every recipe
+- Items in `emi_discovery:requires_advancement/<namespace>/<path>` item tags stay hidden from the index until the advancement `<namespace>:<path>` is earned or the item is picked up. 
+  - In recipes they're blacked out when "Black Out Unknown Items in Recipes" is on; otherwise recipes that make or use them are hidden
+- "Black Out Unknown Items in Recipes" also works with "Only Filter the Index", where it only blacks out locked items
+- Advancement rules accept `exclude` (ids, `#tags` or `/regex/` patterns to leave out) and `types` (`items`, `fluids`, `effects`) to limit what a rule discovers
+- "Reliable EMI Tabs Advancement" option to hide Reliable EMI's creative tabs until an advancement is earned
+- "Black Out Unknown Items in Index" option: with "Filter Items in Index" off, undiscovered items in EMI's sidebars are shown as black silhouettes with obscured tooltips
+
+### Fixed
+- The index not updating after discovering items with Reliable EMI 4.8.0 or newer installed
+- Discovered items not saving on servers whose names contain characters that aren't allowed in file names
+- Items unlocked while EMI was searching sometimes staying hidden until the next discovery
+- Fluids not being blacked out in recipes when "Black Out Unknown Items in Recipes" is on
+
 ## [2.1.0] 2026-10-04
 
 ### Added

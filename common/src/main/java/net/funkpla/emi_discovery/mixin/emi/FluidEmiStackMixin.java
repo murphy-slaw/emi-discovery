@@ -12,12 +12,22 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(FluidEmiStack.class)
 public class FluidEmiStackMixin {
-    @WrapOperation(method = "render", remap = false, at = @At(value = "INVOKE", target = "Ldev/emi/emi/platform" +
-            "/EmiAgnos;renderFluid(Ldev/emi/emi/api/stack/FluidEmiStack;Lcom/mojang/blaze3d/vertex/PoseStack;IIF)V"))
-    private void blackoutFluids(FluidEmiStack stack, PoseStack matrices, int x, int y, float delta,
-                                Operation<Void> original, @Local(name = "raw") GuiGraphics raw) {
-        if (KnownItems.shouldBlackoutIndex() && !KnownItems.isKnown(stack)) {
-            raw.fill(x, y, x + 16, y + 16, 0xFFFFFFFF);
+    /**
+     * Fluid sprites reset the shader colour before drawing, so they ignore the blackout tint (draw a plain silhouette
+     * instead while a blackout is being rendered).
+     */
+    @WrapOperation(
+            remap = false,
+            method = "render",
+            at = @At(
+                    value = "INVOKE",
+                    remap = true,
+                    target = "Ldev/emi/emi/platform/EmiAgnos;renderFluid(Ldev/emi/emi/api/stack/FluidEmiStack;Lcom/mojang/blaze3d/vertex/PoseStack;IIF)V"))
+    private void blackoutFluid(
+            FluidEmiStack stack, PoseStack matrices, int x, int y, float delta, Operation<Void> original,
+            @Local(argsOnly = true) GuiGraphics draw) {
+        if (KnownItems.isRenderingBlackout()) {
+            draw.fill(x, y, x + 16, y + 16, 0xFF000000);
         } else {
             original.call(stack, matrices, x, y, delta);
         }
