@@ -27,7 +27,7 @@ public abstract class PageSlotWidgetMixin extends SlotWidgetMixin {
     @Override
     protected void overrideDrawSlotHighlight(
             GuiGraphics draw, Bounds bounds, Operation<Void> original) {
-        if (KnownItems.shouldBlackoutRecipes() || KnownItems.shouldIngredientDisplay(((SlotWidget) (Object) this).getStack())) {
+        if (KnownItems.shouldBlackoutRecipes() || KnownItems.shouldIngredientDisplayInRecipes(((SlotWidget) (Object) this).getStack())) {
             original.call(draw, bounds);
         }
     }
@@ -45,7 +45,7 @@ public abstract class PageSlotWidgetMixin extends SlotWidgetMixin {
             method = "render",
             at = @At(value = "INVOKE", target = "Ldev/emi/emi/api/stack/EmiIngredient;isEmpty()Z"))
     private boolean filterPageSlots(EmiIngredient ingredient, Operation<Boolean> original) {
-        emi_discovery$drawIcon = KnownItems.shouldBlackoutRecipes() || KnownItems.shouldIngredientDisplay(ingredient);
+        emi_discovery$drawIcon = KnownItems.shouldBlackoutRecipes() || KnownItems.shouldIngredientDisplayInRecipes(ingredient);
         return original.call(ingredient);
     }
 

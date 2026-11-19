@@ -1,9 +1,12 @@
 package net.funkpla.emi_discovery.compat;
 
+import com.evandev.remi.feature.creativemodetab.CreativeModeTabManager;
 import com.evandev.remi.feature.stackgroup.EmiGroupStack;
 import com.evandev.remi.feature.stackgroup.GroupedEmiStack;
 import com.evandev.remi.integration.emi.StackManager;
 import dev.emi.emi.api.stack.EmiStack;
+import dev.emi.emi.screen.EmiScreenManager;
+import net.funkpla.emi_discovery.Constants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,14 +21,26 @@ public final class RemiCompat {
     public static void onFilterChanged() {
         try {
             EmiGroupStack.onStackFilterChanged();
-        } catch (Throwable ignored) {
-        }
-        try {
-            if (StackManager.sourceStacks != null && !StackManager.sourceStacks.isEmpty()) {
-                StackManager.buildStacks(StackManager.sourceStacks);
-                StackManager.repopulateIndexPanelsIfDirty();
+            StackManager.invalidateStacks();
+            List<EmiStack> source = StackManager.sourceStacks;
+            if (source != null && !source.isEmpty()) {
+                StackManager.updateSourceStacks(source);
             }
-        } catch (Throwable ignored) {
+            StackManager.repopulateIndexPanelsIfDirty();
+        } catch (Throwable e) {
+            Constants.LOG.error("EMI Discovery: Failed to refresh Reliable EMI's index", e);
+        }
+    }
+
+    /**
+     * Rebuild REMI's creative tab list after tab visibility changes
+     */
+    public static void reloadTabs() {
+        try {
+            CreativeModeTabManager.reload();
+            EmiScreenManager.recalculate();
+        } catch (Throwable e) {
+            Constants.LOG.error("EMI Discovery: Failed to reload Reliable EMI's tabs", e);
         }
     }
 

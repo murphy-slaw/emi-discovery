@@ -41,7 +41,15 @@ public class EmiDiscoveryConfig implements ConfigData {
     @ConfigEntry.Gui.Tooltip(count = 2)
     public boolean hideEmptyRemiTabs = false;
 
+    @ConfigEntry.Category("index")
+    @ConfigEntry.Gui.Tooltip(count = 2)
+    public String remiTabsAdvancement = "";
+
     // Recipe Screen & Filtering
+    @ConfigEntry.Category("recipes")
+    @ConfigEntry.Gui.Tooltip(count = 2)
+    public boolean indexOnly = false;
+
     @ConfigEntry.Category("recipes")
     @ConfigEntry.Gui.Tooltip(count = 2)
     public boolean displayWithUnknownWorkstation = false;
@@ -66,6 +74,10 @@ public class EmiDiscoveryConfig implements ConfigData {
     @ConfigEntry.Category("blackout")
     @ConfigEntry.Gui.Tooltip(count = 2)
     public boolean blackoutUnknownInRecipes = false;
+
+    @ConfigEntry.Category("blackout")
+    @ConfigEntry.Gui.Tooltip(count = 2)
+    public boolean blackoutUnknownInIndex = false;
 
     @ConfigEntry.Category("blackout")
     @ConfigEntry.Gui.Tooltip(count = 2)

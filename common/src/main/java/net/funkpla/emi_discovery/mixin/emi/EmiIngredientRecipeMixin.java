@@ -39,7 +39,7 @@ public class EmiIngredientRecipeMixin {
                 return stacks;
             }
 
-            List<EmiStack> filtered = stacks.stream().filter(KnownItems::shouldStackDisplay).toList();
+            List<EmiStack> filtered = stacks.stream().filter(KnownItems::shouldStackDisplayInRecipes).toList();
             return filtered.isEmpty() ? List.of(EmiStack.EMPTY) : filtered;
         }
         return stacks;
@@ -64,6 +64,6 @@ public class EmiIngredientRecipeMixin {
         if (KnownItems.shouldBlackoutRecipes()) {
             return stacks;
         }
-        return stacks.stream().filter(KnownItems::shouldStackDisplay).toList();
+        return stacks.stream().filter(KnownItems::shouldStackDisplayInRecipes).toList();
     }
 }

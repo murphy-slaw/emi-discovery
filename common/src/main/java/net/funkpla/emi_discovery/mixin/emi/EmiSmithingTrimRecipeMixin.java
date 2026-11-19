@@ -24,6 +24,6 @@ public class EmiSmithingTrimRecipeMixin {
     if (KnownItems.shouldBlackoutRecipes()) {
       return original.call(ingredient);
     }
-    return ingredient.getEmiStacks().stream().filter(KnownItems::shouldStackDisplay).toList();
+    return ingredient.getEmiStacks().stream().filter(KnownItems::shouldStackDisplayInRecipes).toList();
   }
 }

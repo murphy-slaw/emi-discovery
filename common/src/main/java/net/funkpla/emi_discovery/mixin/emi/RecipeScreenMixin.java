@@ -21,7 +21,7 @@ public abstract class RecipeScreenMixin {
             EmiRecipeManager recipeManager,
             EmiRecipeCategory emiRecipeCategory,
             Operation<List<EmiIngredient>> original) {
-        if (!KnownItems.isModEnabled() || KnownItems.shouldBlackoutRecipes() || KnownItems.displayWithUnknownWorkstation()) {
+        if (!KnownItems.isModEnabled() || KnownItems.shouldBlackoutRecipes()) {
             return original.call(recipeManager, emiRecipeCategory);
         }
         return KnownItems.workstationsFiltered(emiRecipeCategory);

@@ -33,7 +33,7 @@ public class TagEmiIngredientMixin {
         if (allStacks == null || allStacks.isEmpty()) {
             return original.call(tagEmiIngredient);
         }
-        List<EmiStack> known = allStacks.stream().filter(KnownItems::shouldStackDisplay).toList();
+        List<EmiStack> known = allStacks.stream().filter(KnownItems::shouldStackDisplayInRecipes).toList();
         return known.isEmpty() ? allStacks : known;
     }
 }

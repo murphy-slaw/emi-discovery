@@ -1,6 +1,8 @@
 package net.funkpla.emi_discovery.mixin.emi;
 
 import net.funkpla.emi_discovery.KnownItems;
+import net.funkpla.emi_discovery.advancement.AdvancementDiscoveryManager;
+import net.funkpla.emi_discovery.advancement.AdvancementLocks;
 import net.minecraft.client.Minecraft;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
@@ -24,6 +26,8 @@ public class EmiReloadManagerMixin {
             at = @At(value = "INVOKE", target = "Ldev/emi/emi/registry/EmiRecipes;bake()V", shift = At.Shift.AFTER)
     )
     private void afterRecipesBake(CallbackInfo ci) {
+        AdvancementLocks.invalidate();
+        AdvancementDiscoveryManager.reset();
         KnownItems.invalidateCache();
         Minecraft.getInstance().execute(KnownItems::onComparisonsReady);
     }

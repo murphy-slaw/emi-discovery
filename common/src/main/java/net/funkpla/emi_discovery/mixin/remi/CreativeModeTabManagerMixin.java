@@ -14,6 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Mixin(value = CreativeModeTabManager.class, remap = false)
@@ -48,6 +49,14 @@ public abstract class CreativeModeTabManagerMixin {
             return false;
         }
         return !KnownItems.hasDiscoveredItems(tab);
+    }
+
+    @ModifyReturnValue(method = "getVisibleCreativeModeTabs", at = @At("RETURN"))
+    private static List<CreativeModeTab> lockTabsUntilAdvancement(List<CreativeModeTab> original) {
+        if (EmiConfig.editMode || !KnownItems.areRemiTabsLocked()) {
+            return original;
+        }
+        return new ArrayList<>();
     }
 
     @Inject(method = "reload", at = @At("TAIL"))

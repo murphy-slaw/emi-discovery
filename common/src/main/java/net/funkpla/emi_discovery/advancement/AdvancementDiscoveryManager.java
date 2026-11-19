@@ -7,6 +7,7 @@ import com.google.gson.stream.JsonToken;
 import dev.emi.emi.screen.EmiScreenManager;
 import net.funkpla.emi_discovery.Constants;
 import net.funkpla.emi_discovery.KnownItems;
+import net.funkpla.emi_discovery.compat.RemiCompat;
 import net.funkpla.emi_discovery.platform.Services;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffect;
@@ -139,6 +140,8 @@ public class AdvancementDiscoveryManager {
             }
         }
 
+        newlyDiscoveredItems.removeIf(AdvancementLocks::isLocked);
+
         boolean changed = false;
         if (!newlyDiscoveredItems.isEmpty()) {
             changed |= KnownItems.addKnownItems(newlyDiscoveredItems);
@@ -152,6 +155,31 @@ public class AdvancementDiscoveryManager {
 
         if (changed && EmiScreenManager.search != null) {
             EmiScreenManager.search.update();
+        }
+    }
+
+    public static void onProgressChanged(boolean reset, Set<ResourceLocation> changed) {
+        boolean locksChanged = false;
+        boolean tabsChanged = false;
+        ResourceLocation tabsAdvancement = KnownItems.getRemiTabsAdvancement();
+        if (reset) {
+            locksChanged = AdvancementLocks.hasLocks();
+            tabsChanged = tabsAdvancement != null;
+            evaluateAll();
+        } else {
+            Set<ResourceLocation> changedTracked = new HashSet<>();
+            for (ResourceLocation id : changed) {
+                if (isAdvancementTracked(id)) changedTracked.add(id);
+                if (AdvancementLocks.isLockAdvancement(id)) locksChanged = true;
+                if (id.equals(tabsAdvancement)) tabsChanged = true;
+            }
+            onAdvancementsUpdated(changedTracked);
+        }
+        if (locksChanged) {
+            KnownItems.invalidateCache();
+        }
+        if (tabsChanged && Services.PLATFORM.isModLoaded("remi")) {
+            RemiCompat.reloadTabs();
         }
     }
 

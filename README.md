@@ -13,7 +13,7 @@ inventory.
 - Known items can be prepopulated from a JSON file or unlocked via advancement.
 - Known items are stored client side, separately for each player and world.
 - Works with Reliable EMI (REMI) item groups.
-- Blackout mode renders undiscovered items as black silhouettes in recipes instead of hiding the recipe entirely (sorta like BTA's guidebook).
+- Blackout mode renders undiscovered items as black silhouettes in recipes instead of hiding the recipe entirely (sorta like BTA's guidebook). It can also black them out in the index instead of hiding them there.
 
 ## Configuration
 
@@ -52,6 +52,12 @@ You can configure advancements to unlock items, tags, or entire mods by placing 
   }
 ]
 ```
+Rules also accept `mod` (namespaces), `patterns` (regular expressions matched against ids), `exclude` (ids, `#tags` or
+`/regex/` patterns to leave out) and `types` (any of `items`, `fluids`, `effects`; all of them when omitted).
+
+### Advancement Locks
+Items in an item tag named `emi_discovery:requires_advancement/<namespace>/<path>` stay hidden until the player earns
+the advancement `<namespace>:<path>` (or picks the item up).
 
 ## Acknowledgements
 - Inspired by, based on, and reuses code from [Discovered Enough Items](https://www.curseforge.com/minecraft/mc-mods/dei)

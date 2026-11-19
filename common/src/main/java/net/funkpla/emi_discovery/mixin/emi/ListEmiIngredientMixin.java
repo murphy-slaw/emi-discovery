@@ -30,7 +30,7 @@ public class ListEmiIngredientMixin {
             return all;
         }
         List<? extends EmiIngredient> known = all.stream()
-                .filter(KnownItems::shouldIngredientDisplay)
+                .filter(KnownItems::shouldIngredientDisplayInRecipes)
                 .toList();
         return known.isEmpty() ? all : known;
     }

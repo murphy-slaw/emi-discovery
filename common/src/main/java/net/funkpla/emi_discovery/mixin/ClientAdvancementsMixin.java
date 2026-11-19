@@ -23,8 +23,6 @@ public class ClientAdvancementsMixin {
 
     @Inject(method = "update", at = @At("TAIL"))
     private void emi_discovery$onAdvancementsUpdate(ClientboundUpdateAdvancementsPacket packet, CallbackInfo ci) {
-        if (!AdvancementDiscoveryManager.hasAdvancementRules()) return;
-
         if (packet.shouldReset()) {
             AdvancementCache.clear();
             for (Map.Entry<ResourceLocation, AdvancementProgress> entry : packet.getProgress().entrySet()) {
@@ -32,18 +30,16 @@ public class ClientAdvancementsMixin {
                     AdvancementCache.markCompleted(entry.getKey());
                 }
             }
-            AdvancementDiscoveryManager.evaluateAll();
+            AdvancementDiscoveryManager.onProgressChanged(true, Set.of());
             return;
         }
 
-        Set<ResourceLocation> changedTracked = new HashSet<>();
+        Set<ResourceLocation> changed = new HashSet<>();
 
         for (ResourceLocation id : packet.getRemoved()) {
             if (AdvancementCache.isDone(id)) {
                 AdvancementCache.markNotCompleted(id);
-                if (AdvancementDiscoveryManager.isAdvancementTracked(id)) {
-                    changedTracked.add(id);
-                }
+                changed.add(id);
             }
         }
 
@@ -54,19 +50,15 @@ public class ClientAdvancementsMixin {
 
             if (isDone && !wasDone) {
                 AdvancementCache.markCompleted(id);
-                if (AdvancementDiscoveryManager.isAdvancementTracked(id)) {
-                    changedTracked.add(id);
-                }
+                changed.add(id);
             } else if (!isDone && wasDone) {
                 AdvancementCache.markNotCompleted(id);
-                if (AdvancementDiscoveryManager.isAdvancementTracked(id)) {
-                    changedTracked.add(id);
-                }
+                changed.add(id);
             }
         }
 
-        if (!changedTracked.isEmpty()) {
-            AdvancementDiscoveryManager.onAdvancementsUpdated(changedTracked);
+        if (!changed.isEmpty()) {
+            AdvancementDiscoveryManager.onProgressChanged(false, changed);
         }
     }
 }
