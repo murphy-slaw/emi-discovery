@@ -11,6 +11,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import com.mojang.authlib.GameProfile;
+import com.mojang.blaze3d.systems.RenderSystem;
 import dev.emi.emi.api.EmiApi;
 import dev.emi.emi.api.recipe.EmiCraftingRecipe;
 import dev.emi.emi.api.recipe.EmiRecipe;
@@ -28,6 +29,7 @@ import net.funkpla.emi_discovery.mixin.MinecraftServerStorageSourceAccessor;
 import net.funkpla.emi_discovery.mixin.emi.accessor.EmiTagRecipeAccessor;
 import net.funkpla.emi_discovery.platform.Services;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.multiplayer.ServerData;
 import net.minecraft.client.server.IntegratedServer;
 import net.minecraft.core.Holder;
@@ -51,6 +53,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -80,11 +83,11 @@ public class KnownItems {
                     .maximumSize(100000)
                     .build(
                             new CacheLoader<>() {
-                                @Override
-                                public @NotNull Boolean load(@NotNull EmiStack stack) {
-                                    return shouldStackDisplayUncached(stack);
-                                }
-                            });
+        @Override
+        public @NotNull Boolean load(@NotNull EmiStack stack) {
+            return shouldStackDisplayUncached(stack);
+        }
+    });
 
     private static volatile boolean comparisonsReady = false;
     private static boolean wasHidingRemiTabs = false;
@@ -665,6 +668,10 @@ public class KnownItems {
         return isModEnabled() && getConfig().blackoutUnknownInRecipes;
     }
 
+    public static boolean shouldBlackoutIndex() {
+        return isModEnabled() && !getConfig().filterIndex && getConfig().blackoutUnknownInIndex;
+    }
+
     public static boolean shouldObscureTooltips() {
         return isModEnabled() && getConfig().obscureTooltips;
     }
@@ -752,7 +759,7 @@ public class KnownItems {
     }
 
     public static boolean shouldStackDisplayUncached(EmiStack emiStack) {
-        if (!shouldFilterIndex()) {
+        if (!shouldFilterIndex() && !shouldBlackoutIndex()) {
             return true;
         }
         if (REMI_LOADED) {
@@ -898,6 +905,31 @@ public class KnownItems {
             }
         }
         return result.entrySet().stream();
+    }
+
+    public static void wrapBlackout(GuiGraphics draw, int x, int y, Callable<Void> drawer) {
+        draw.flush();
+        RenderSystem.setShaderColor(0.0f, 0.0f, 0.0f, 1.0f);
+
+        try {
+            drawer.call();
+        } catch (Exception e) {
+            Constants.LOG.error(e.getLocalizedMessage());
+        }
+
+        draw.flush();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+        if (KnownItems.shouldShowQuestionMarkOverlay()) {
+            Minecraft client = Minecraft.getInstance();
+            String q = "?";
+            int textX = x + 16 - client.font.width(q);
+            int textY = y + 16 - client.font.lineHeight + 1;
+            draw.pose().pushPose();
+            draw.pose().translate(0, 0, 200);
+            draw.drawString(client.font, q, textX, textY, 0xFFE0E0E0, true);
+            draw.pose().popPose();
+        }
     }
 
     public static void loadFromDisk() {

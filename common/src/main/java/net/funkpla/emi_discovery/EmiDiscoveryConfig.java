@@ -69,6 +69,10 @@ public class EmiDiscoveryConfig implements ConfigData {
 
     @ConfigEntry.Category("blackout")
     @ConfigEntry.Gui.Tooltip(count = 2)
+    public boolean blackoutUnknownInIndex = false;
+
+    @ConfigEntry.Category("blackout")
+    @ConfigEntry.Gui.Tooltip(count = 2)
     public boolean obscureTooltips = true;
 
     @ConfigEntry.Category("blackout")

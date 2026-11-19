@@ -65,6 +65,10 @@
     "text.autoconfig.emi_discovery.option.blackoutUnknownInRecipes.@Tooltip[0]": "When enabled, recipes with undiscovered items are displayed using black silhouettes",
     "text.autoconfig.emi_discovery.option.blackoutUnknownInRecipes.@Tooltip[1]": "instead of hiding the recipe from the view entirely.",
 
+    "text.autoconfig.emi_discovery.option.blackoutUnknownInIndex": "Black Out Unknown Items in Index",
+    "text.autoconfig.emi_discovery.option.blackoutUnknownInIndex.@Tooltip[0]": "When enabled, undiscovered items in the index are displayed using black silhouettes.",
+    "text.autoconfig.emi_discovery.option.blackoutUnknownInIndex.@Tooltip[1]": "If index filtering is enabled, this does nothing.",
+
     "text.autoconfig.emi_discovery.option.obscureTooltips": "Obscure Tooltips on Blacked-Out Items",
     "text.autoconfig.emi_discovery.option.obscureTooltips.@Tooltip[0]": "When enabled, hover tooltips on undiscovered/blacked-out items display '???'.",
     "text.autoconfig.emi_discovery.option.obscureTooltips.@Tooltip[1]": "When disabled, full item names and properties remain visible on hover.",
